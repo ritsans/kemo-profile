@@ -9,52 +9,52 @@ module.exports = {
   scopes: [],
   types: {
     chore: {
-      description: 'Build process or auxiliary tool changes',
+      description: 'ビルドプロセスや補助ツールの変更',
       emoji: '🤖',
       value: 'chore'
     },
     add: {
-      description: 'Add changes',
+      description: '変更の追加',
       emoji: '❇️',
       value: 'add'
     },
     docs: {
-      description: 'Documentation only changes',
+      description: 'ドキュメントのみの変更',
       emoji: '✏️',
       value: 'docs'
     },
     feat: {
-      description: 'A new feature',
+      description: '新機能',
       emoji: '🎸',
       value: 'feat'
     },
     fix: {
-      description: 'A bug fix',
+      description: 'バグ修正',
       emoji: '🐛',
       value: 'fix'
     },
     perf: {
-      description: 'A code change that improves performance',
+      description: 'パフォーマンス改善',
       emoji: '⚡️',
       value: 'perf'
     },
     refactor: {
-      description: 'A code change that neither fixes a bug or adds a feature',
+      description: 'リファクタリング',
       emoji: '💡',
       value: 'refactor'
     },
     release: {
-      description: 'Create a release commit',
+      description: 'リリースコミットの作成',
       emoji: '🏹',
       value: 'release'
     },
     style: {
-      description: 'Markup, white-space, formatting, missing semi-colons...',
+      description: 'コードスタイルの修正',
       emoji: '💄',
       value: 'style'
     },
     test: {
-      description: 'Adding missing tests',
+      description: 'テストの追加',
       emoji: '💍',
       value: 'test'
     },
