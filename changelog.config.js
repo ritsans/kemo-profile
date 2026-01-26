@@ -1,10 +1,11 @@
 module.exports = {
   disableEmoji: false,
   format: '{type}{scope}: {emoji}{subject}',
-  list: ['test', 'feat', 'fix', 'chore', 'docs', 'refactor', 'style', 'ci', 'perf'],
+  list: ["add", "fix", "docs", "feat", "refactor", "test", "style", "perf"],
+
   maxMessageLength: 64,
   minMessageLength: 3,
-  questions: ['type', 'scope', 'subject','body'],
+  questions: ['type', 'subject'],
   scopes: [],
   types: {
     chore: {
@@ -12,10 +13,10 @@ module.exports = {
       emoji: '🤖',
       value: 'chore'
     },
-    ci: {
-      description: 'CI related changes',
-      emoji: '🎡',
-      value: 'ci'
+    add: {
+      description: 'Add changes',
+      emoji: '❇️',
+      value: 'add'
     },
     docs: {
       description: 'Documentation only changes',
