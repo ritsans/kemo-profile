@@ -6,9 +6,9 @@
 
 ## 1. Supabase環境設定
 
-- [ ] Supabaseクライアント初期化用のユーティリティを作成（`lib/supabase/client.ts`, `lib/supabase/server.ts`）
-- [ ] 環境変数の設定（`.env.local`に`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`）
-- [ ] Supabase Middlewareの設定（認証セッション管理用）
+- [x] Supabaseクライアント初期化用のユーティリティを作成（`lib/supabase/client.ts`, `lib/supabase/server.ts`）
+- [x] 環境変数の設定（`.env.local`に`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`）
+- [x] Supabase Middlewareの設定（認証セッション管理用）
 
 ## 2. 認証プロバイダー設定（Supabase Dashboard）
 
@@ -18,7 +18,7 @@
 
 ## 3. データベーススキーマ
 
-- [ ] `profiles` テーブルの作成
+- [x] `profiles` テーブルの作成
   - `profile_id` (TEXT, PK): base62、15文字のランダムID
   - `owner_user_id` (UUID, FK → auth.users): プロフィール所有者
   - `display_name` (TEXT, NOT NULL): ハンドルネーム
@@ -26,14 +26,16 @@
   - `x_username` (TEXT): X (Twitter) ユーザー名（任意）
   - `created_at` (TIMESTAMPTZ)
   - `updated_at` (TIMESTAMPTZ)
-- [ ] `profiles` テーブルのRLSポリシー設定
+- [x] `profiles` テーブルのRLSポリシー設定
   - 全ユーザー: SELECT（公開プロフィールの閲覧）
   - 所有者のみ: UPDATE（自分のプロフィールの編集）
-- [ ] `owner_user_id` へのユニークインデックス（1ユーザー1プロフィール）
+- [x] `owner_user_id` へのユニークインデックス（1ユーザー1プロフィール）
+- [x] マイグレーション適用（Supabase MCP経由で完了）
+- [x] TypeScript型定義生成（`lib/supabase/database.types.ts`）
 
 ## 4. ユーティリティ関数
 
-- [ ] `generateProfileId()`: 暗号学的に安全なbase62ランダムID生成関数（15文字）
+- [x] `generateProfileId()`: 暗号学的に安全なbase62ランダムID生成関数（15文字）
   - `crypto.getRandomValues()` を使用（`Math.random()` 不可）
   - 文字セット: `0-9`, `a-z`, `A-Z`（62文字）
 
