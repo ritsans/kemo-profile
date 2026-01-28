@@ -94,37 +94,28 @@ Do not perform linter behavior. Delegate all linting to biome.
 
 #### Core Rules
 
-- DRY (Don't Repeat Yourself)
+##### Architecture
 
-    * Tailwind CSS: allow class duplication up to **two occurrences**.
-    * TypeScript: consolidate identical type definitions from the first occurrence (`types/` or `lib/types`).
-    * Validation: authorization, input validation, and ID generation must be implemented in a single centralized location from the start.
+- Keep it simple; mirror existing patterns.
+- Do NOT add DI, abstract base classes, plugin/provider architectures, or “future-proof” layers.
 
-- **KISS** (Keep It Simple, Stupid)
+##### Boundaries (Server/Client + Routes)
 
-    * Align with standard **Next.js patterns**.
-    * Do not arbitrarily introduce custom DI containers or complex design patterns.
-    * Do not add state management until it becomes necessary.
+- Server: fetch + server-only logic. Mutations must go through Server Actions or Route Handlers.
+- Client: UI interaction only; keep logic thin.
+- Routes/Actions flow: validation → auth → processing → response. If complex, move logic to `lib/services/*`.
 
-- **YAGNI** (You Ain't Gonna Need It)
+##### Pragmatics
 
-    * **Do not create unused extension points.**
-    * Do not add unused parameters, generic interfaces, configuration options, or abstract layers that suggest support for multiple providers.
-    * If something appears necessary, stop at a *proposal* rather than an *implementation*, and ask for user instructions. At the same time, always verify whether it falls within the scope of `docs/spec.md` as justification.
+- State: server state > URL > component > Context. Avoid external state libs until clearly necessary.
+- Tailwind: allow duplication; extract only if the exact class set appears 3+ times in one file.
+- TypeScript: dedupe types only if used in 2+ places and same meaning; keep API DTOs separate from domain types.
 
-### SOLID Principle
+##### Pragmatic Coding (no premature DRY)
 
-- **SRP** (Single Responsibility Principle)
-
-    * Do not mix “presentation” and “data fetching / side effects” within components.
-    * Keep Route Handlers as a simple single flow:
-         “input validation → authorization → processing → response”. If they become complex, extract the logic into `lib/`.
-    
-- **OCP** (Open–Closed Principle)
-
-    * **Limit to only what is confirmed to truly increase.**
-    * Do not build generic plugin architectures or abstract base classes.
-    * Do not introduce large-scale abstractions in anticipation of unknown future requirements.
+- Tailwind: allow duplication; only extract when the exact class set appears 3+ times in one file.
+- TypeScript: deduplicate types only if used in 2+ places AND they represent the same meaning.
+  Keep API DTOs separate from internal domain types.
 
 #### Project Rules
 
