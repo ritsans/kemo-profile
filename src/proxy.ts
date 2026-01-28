@@ -2,10 +2,10 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 /**
- * Supabase認証セッション管理用のMiddleware
+ * Supabase認証セッション管理用のProxy
  * すべてのリクエストでセッション状態を更新する
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
