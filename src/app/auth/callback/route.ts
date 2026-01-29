@@ -64,11 +64,13 @@ export async function GET(request: NextRequest) {
       profileId = generateProfileId();
 
       // OAuth プロバイダー別のメタデータ取得
+      const provider = user.app_metadata.provider;
       const metadata = user.user_metadata;
+
       const displayName =
         metadata.full_name || metadata.name || "名無しのけもの";
       const avatarUrl = metadata.avatar_url || metadata.picture || null;
-      const xUsername = null; // Google OAuth では x_username は null
+      const xUsername = provider === "twitter" ? metadata.user_name || null : null;
 
       const { error: insertError } = await supabase.from("profiles").insert({
         profile_id: profileId,
