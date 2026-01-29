@@ -99,6 +99,24 @@ Code formatting runs automatically via hooks. Run `pnpm lint` to check for issue
 
 Do not perform linter behavior. Delegate all linting to biome.
 
+### Environment Variables
+
+**IMPORTANT**: Always use the `env()` helper function from `@/lib/env` to access environment variables.
+
+- **DO NOT use** `process.env.XXX!` (non-null assertion operator) - violates Biome's `noNonNullAssertion` rule
+- **DO use** `env("XXX")` from `@/lib/env`
+
+```typescript
+// ❌ BAD - Biome lint error
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
+// ✅ GOOD
+import { env } from "@/lib/env";
+const url = env("NEXT_PUBLIC_SUPABASE_URL");
+```
+
+The `env()` helper throws an error at runtime if the variable is undefined, providing better error messages than silent undefined access.
+
 ## Architecture
 
 ### URL Structure
