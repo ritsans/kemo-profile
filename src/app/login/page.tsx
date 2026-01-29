@@ -4,7 +4,7 @@ import { LoginButtons } from "./login-buttons";
 
 /**
  * ログインページ
- * 認証済みの場合は /my へリダイレクト
+ * 認証済みの場合は /mypage へリダイレクト
  */
 export default async function LoginPage() {
   const supabase = await createClient();
@@ -12,9 +12,9 @@ export default async function LoginPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 認証済みの場合は /my へリダイレクト
+  // 認証済みの場合は /mypage へリダイレクト
   if (user) {
-    redirect("/my");
+    redirect("/mypage");
   }
 
   return (
