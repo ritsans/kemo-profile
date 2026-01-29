@@ -35,6 +35,35 @@ pnpm start
 pnpm lint
 ```
 
+## Supabase Migration
+
+**IMPORTANT**: When executing Supabase migrations, **always use the MCP (Model Context Protocol) server tools**, not the Supabase CLI.
+
+### Migration Workflow
+
+1. Create migration file in `supabase/migrations/` with naming: `XXXXX_migration_name.sql`
+2. Apply migration using MCP tool: `mcp__plugin_supabase_supabase__apply_migration`
+3. **Do NOT use** `supabase db push` or other Supabase CLI commands
+
+### Example
+
+```typescript
+// Use MCP tool
+mcp__plugin_supabase_supabase__apply_migration({
+  project_id: "sghmdallnsffwnuljwmg",
+  name: "migration_name",
+  query: "SQL content here"
+})
+```
+
+### Available MCP Tools
+
+- `list_projects`: List all Supabase projects
+- `apply_migration`: Apply SQL migration to database
+- `execute_sql`: Execute raw SQL (use for queries, not DDL)
+- `list_tables`: List tables in schema
+- `get_advisors`: Check for security/performance issues
+
 ## Rules for Implementation and Revision Proposals
 
 ### Basic Principles
