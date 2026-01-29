@@ -2,6 +2,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/lib/supabase/database.types";
+import { EmailLoginForm } from "./email-login-form";
 
 /**
  * OAuth ログインボタン (Client Component)
@@ -63,6 +64,24 @@ export function LoginButtons() {
         </svg>
         X (Twitter) でログイン (準備中)
       </button>
+
+      {/* 区切り線 */}
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-200" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-white px-2 text-gray-400">または</span>
+        </div>
+      </div>
+
+      {/* Email Magic Link - 控えめな配置 */}
+      <div className="pt-2">
+        <p className="mb-3 text-center text-xs text-gray-500">
+          メールアドレスでログイン
+        </p>
+        <EmailLoginForm />
+      </div>
     </div>
   );
 }

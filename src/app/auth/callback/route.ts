@@ -67,10 +67,21 @@ export async function GET(request: NextRequest) {
       const provider = user.app_metadata.provider;
       const metadata = user.user_metadata;
 
-      const displayName =
-        metadata.full_name || metadata.name || "名無しのけもの";
-      const avatarUrl = metadata.avatar_url || metadata.picture || null;
-      const xUsername = provider === "twitter" ? metadata.user_name || null : null;
+      // Email ログインユーザーはOAuthメタデータがないため、メールアドレスから名前を生成
+      let displayName: string;
+      let avatarUrl: string | null = null;
+      let xUsername: string | null = null;
+
+      if (provider === "email" || !provider) {
+        // Magic Link ユーザー
+        displayName = user.email?.split("@")[0] || "名無しのけもの";
+      } else {
+        // OAuth ユーザー
+        displayName = metadata.full_name || metadata.name || "名無しのけもの";
+        avatarUrl = metadata.avatar_url || metadata.picture || null;
+        xUsername =
+          provider === "twitter" ? metadata.user_name || null : null;
+      }
 
       const { error: insertError } = await supabase.from("profiles").insert({
         profile_id: profileId,
