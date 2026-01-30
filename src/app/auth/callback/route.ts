@@ -94,8 +94,8 @@ export async function GET(request: NextRequest) {
       if (insertError) throw insertError;
     }
 
-    // /p/{profile_id} へリダイレクト
-    const redirectUrl = `${origin}/p/${profileId}`;
+    // マイページへリダイレクト
+    const redirectUrl = `${origin}/mypage`;
     const response = NextResponse.redirect(redirectUrl);
 
     // cookie転写: request.cookies に保持された cookie を response に適用
