@@ -1,7 +1,6 @@
 "use client";
 
 import { createBrowserClient } from "@supabase/ssr";
-import { env } from "@/lib/env";
 import type { Database } from "@/lib/supabase/database.types";
 import { EmailLoginForm } from "./email-login-form";
 
@@ -11,14 +10,24 @@ import { EmailLoginForm } from "./email-login-form";
  */
 export function LoginButtons() {
   const supabase = createBrowserClient<Database>(
-    env("NEXT_PUBLIC_SUPABASE_URL"),
-    env("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   );
 
   const handleGoogleLogin = async () => {
     const { origin } = window.location;
     await supabase.auth.signInWithOAuth({
       provider: "google",
+      options: {
+        redirectTo: `${origin}/auth/callback`,
+      },
+    });
+  };
+
+  const handleXLogin = async () => {
+    const { origin } = window.location;
+    await supabase.auth.signInWithOAuth({
+      provider: "twitter",
       options: {
         redirectTo: `${origin}/auth/callback`,
       },
@@ -54,16 +63,16 @@ export function LoginButtons() {
         Google でログイン
       </button>
 
-      {/* X (Twitter) OAuth ボタン (未設定のため disabled) */}
+      {/* X (Twitter) OAuth ボタン */}
       <button
         type="button"
-        disabled
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-gray-100 px-4 py-3 text-base font-medium text-gray-400 shadow-sm cursor-not-allowed"
+        onClick={handleXLogin}
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 text-base font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 active:bg-gray-100"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
         </svg>
-        X (Twitter) でログイン (準備中)
+        X (Twitter) でログイン
       </button>
 
       {/* 区切り線 */}

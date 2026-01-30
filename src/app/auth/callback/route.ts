@@ -1,6 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
-import { env } from "@/lib/env";
 import { generateProfileId } from "@/lib/id";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -18,8 +17,8 @@ export async function GET(request: NextRequest) {
 
   // Route Handler用のSupabaseクライアント作成
   const supabase = createServerClient<Database>(
-    env("NEXT_PUBLIC_SUPABASE_URL"),
-    env("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
