@@ -117,6 +117,13 @@ const url = env("NEXT_PUBLIC_SUPABASE_URL");
 
 The `env()` helper throws an error at runtime if the variable is undefined, providing better error messages than silent undefined access.
 
+### SVG Icons
+
+ All decorative SVG icons must include `aria-hidden="true"` to satisfy Biome's `a11y/noSvgWithoutTitle` rule.
+
+- Decorative icons (icons with adjacent text labels): Add `aria-hidden="true"`
+- Standalone meaningful icons: Add `<title>` element inside `<svg>`
+
 ## Architecture
 
 ### URL Structure
