@@ -10,9 +10,21 @@ import type { Database } from "@/lib/supabase/database.types";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const error = searchParams.get("error");
+  const errorDescription = searchParams.get("error_description");
+
+  // OAuth プロバイダーからのエラー (ユーザーがキャンセルした場合など)
+  if (error) {
+    console.error("OAuth provider error:", error, errorDescription);
+    const params = new URLSearchParams({
+      error: error === "access_denied" ? "access_denied" : "auth",
+      ...(errorDescription && { error_description: errorDescription }),
+    });
+    return NextResponse.redirect(`${origin}/login?${params.toString()}`);
+  }
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=auth`);
+    return NextResponse.redirect(`${origin}/login?error=code_missing`);
   }
 
   // Route Handler用のSupabaseクライアント作成
@@ -38,14 +50,20 @@ export async function GET(request: NextRequest) {
     // code → session 交換
     const { error: exchangeError } =
       await supabase.auth.exchangeCodeForSession(code);
-    if (exchangeError) throw exchangeError;
+    if (exchangeError) {
+      console.error("Failed to exchange code for session:", exchangeError);
+      throw new Error("exchange_failed");
+    }
 
     // ユーザー情報取得
     const {
       data: { user },
       error: userError,
     } = await supabase.auth.getUser();
-    if (userError || !user) throw userError || new Error("User not found");
+    if (userError || !user) {
+      console.error("Failed to get user:", userError);
+      throw new Error("user_not_found");
+    }
 
     // 初回ログイン検出: profiles テーブルをチェック
     const { data: existingProfile } = await supabase
@@ -79,7 +97,7 @@ export async function GET(request: NextRequest) {
         // OAuth ユーザー
         displayName = metadata.full_name || metadata.name || "名無しのけもの";
         avatarUrl = metadata.avatar_url || metadata.picture || null;
-        xUsername = provider === "twitter" ? metadata.user_name || null : null;
+        xUsername = provider === "x" ? metadata.user_name || null : null;
       }
 
       const { error: insertError } = await supabase.from("profiles").insert({
@@ -90,7 +108,10 @@ export async function GET(request: NextRequest) {
         x_username: xUsername,
       });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error("Failed to create profile:", insertError);
+        throw new Error("profile_creation_failed");
+      }
     }
 
     // マイページへリダイレクト
@@ -105,6 +126,29 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("OAuth callback error:", error);
-    return NextResponse.redirect(`${origin}/login?error=auth`);
+
+    // エラーメッセージの抽出
+    let errorCode = "auth";
+    let errorDescription: string | undefined;
+
+    if (error instanceof Error) {
+      // カスタムエラーメッセージ
+      if (
+        error.message === "exchange_failed" ||
+        error.message === "user_not_found" ||
+        error.message === "profile_creation_failed"
+      ) {
+        errorCode = error.message;
+      } else {
+        errorDescription = error.message;
+      }
+    }
+
+    const params = new URLSearchParams({
+      error: errorCode,
+      ...(errorDescription && { error_description: errorDescription }),
+    });
+
+    return NextResponse.redirect(`${origin}/login?${params.toString()}`);
   }
 }
