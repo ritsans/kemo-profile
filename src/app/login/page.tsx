@@ -21,6 +21,7 @@ export default async function LoginPage({
     redirect("/mypage");
   }
 
+  // もし未ログイン場合は searchParamsからエラーメッセージ取得、表示
   const params = await searchParams;
   const errorCode = params.error;
   const errorDescription = params.error_description;
@@ -49,6 +50,7 @@ export default async function LoginPage({
 
   const errorMessage = getErrorMessage(errorCode, errorDescription);
 
+  // ログイン済みでなければ、ログインページのUIを返す処理ここから
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md space-y-8">

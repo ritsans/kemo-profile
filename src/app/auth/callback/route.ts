@@ -9,11 +9,14 @@ import type { Database } from "@/lib/supabase/database.types";
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
+
+  // クエリパラメータから code と error を取得する処理
   const code = searchParams.get("code");
   const error = searchParams.get("error");
+
   const errorDescription = searchParams.get("error_description");
 
-  // OAuth プロバイダーからのエラー (ユーザーがキャンセルした場合など)
+  // もしOAuth プロバイダーからのエラーがあればログイン画面へ戻る (ユーザーがキャンセルした場合など)
   if (error) {
     console.error("OAuth provider error:", error, errorDescription);
     const params = new URLSearchParams({
@@ -24,6 +27,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!code) {
+    // codeがない場合リダイレクトしてエラーとして扱う
     return NextResponse.redirect(`${origin}/login?error=code_missing`);
   }
 
@@ -46,8 +50,15 @@ export async function GET(request: NextRequest) {
     },
   );
 
+  // codeの中身:
+  // codeはOAuth 2.0の「認可コード」(Authorization Code)
+  // 具体的には、「/auth/callback?code=abc123xyz789...」
+  // これはGoogleなどのProviderが発行した一時的な引換券のようなものです。
+  // codeは「Googleがこのユーザーを認証した」という証明書であり、それ自体ではログインできず、
+  // サーバー側で検証・交換して初めてセッションが確立されます。
+
   try {
-    // code → session 交換
+    // code → session 交換してセッションをログイン状態にする
     const { error: exchangeError } =
       await supabase.auth.exchangeCodeForSession(code);
     if (exchangeError) {
@@ -66,6 +77,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 初回ログイン検出: profiles テーブルをチェック
+    // profiles テーブルに owner_user_id が存在しなければ初回ログインとして確定
     const { data: existingProfile } = await supabase
       .from("profiles")
       .select("profile_id")
@@ -78,7 +90,7 @@ export async function GET(request: NextRequest) {
       // 既存ユーザー
       profileId = existingProfile.profile_id;
     } else {
-      // 初回ログイン → プロフィール自動作成
+      // 初回ログイン → プロフィールID自動作成
       profileId = generateProfileId();
 
       // OAuth プロバイダー別のメタデータ取得
@@ -100,6 +112,7 @@ export async function GET(request: NextRequest) {
         xUsername = provider === "x" ? metadata.user_name || null : null;
       }
 
+      // profiles テーブルにユーザー新規登録レコード挿入
       const { error: insertError } = await supabase.from("profiles").insert({
         profile_id: profileId,
         owner_user_id: user.id,

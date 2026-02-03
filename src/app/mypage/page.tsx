@@ -20,7 +20,7 @@ export default async function MyPage() {
     redirect("/login");
   }
 
-  // 自分のプロフィールを取得
+  // profileテーブルから自分のプロフィールを取得
   const { data: profile } = await supabase
     .from("profiles")
     .select("profile_id, display_name, avatar_url")

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
+import { useState } from "react";
 import type { Database } from "@/lib/supabase/database.types";
 import { EmailLoginForm } from "./email-login-form";
 
@@ -9,6 +9,8 @@ import { EmailLoginForm } from "./email-login-form";
  * OAuth ログインボタン (Client Component)
  * Google と X (Twitter) の SSO ログインボタンを表示
  */
+
+// supabase クライアントの作成と初期化
 export function LoginButtons() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<{
@@ -21,6 +23,7 @@ export function LoginButtons() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   );
 
+  // Googleアカウントでのログイン処理
   const handleGoogleLogin = async () => {
     try {
       setError(null);
@@ -31,6 +34,10 @@ export function LoginButtons() {
         provider: "google",
         options: {
           redirectTo: `${origin}/auth/callback`,
+
+          // auth.signInWithOAuth: supabaseSDKが内部で認証URLを生成するのに必要
+          // authError: OAuth認証中に失敗した場合のエラーハンドリング
+          // redirectTo: 認証後、戻ってくるURL
         },
       });
 
@@ -60,7 +67,9 @@ export function LoginButtons() {
       });
 
       if (authError) {
-        setError("X (Twitter) ログインに失敗しました。もう一度お試しください。");
+        setError(
+          "X (Twitter) ログインに失敗しました。もう一度お試しください。",
+        );
         console.error("X OAuth error:", authError);
       }
     } catch (err) {
