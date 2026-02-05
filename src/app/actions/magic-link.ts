@@ -1,7 +1,7 @@
 "use server";
 
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { getTrustedAppOrigin } from "@/lib/url";
 
 export type MagicLinkResult = {
   success: boolean;
@@ -19,9 +19,7 @@ export async function sendMagicLink(
   }
 
   const supabase = await createClient();
-  const headersList = await headers();
-  const origin =
-    headersList.get("origin") || headersList.get("x-forwarded-host") || "";
+  const origin = getTrustedAppOrigin();
 
   const { error } = await supabase.auth.signInWithOtp({
     email,

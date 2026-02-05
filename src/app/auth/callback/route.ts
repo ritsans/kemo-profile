@@ -1,14 +1,25 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 import { generateProfileId } from "@/lib/id";
+import {
+  hardenCookieOptions,
+  type SupabaseCookieOptions,
+} from "@/lib/supabase/cookies";
 import type { Database } from "@/lib/supabase/database.types";
+import { getTrustedAppOrigin } from "@/lib/url";
 
 /**
  * OAuth コールバック処理
  * code を session に交換し、初回ログインの場合はプロフィールを自動作成
  */
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  const origin = getTrustedAppOrigin();
+  const pendingCookies: Array<{
+    name: string;
+    value: string;
+    options: SupabaseCookieOptions;
+  }> = [];
 
   // クエリパラメータから code と error を取得する処理
   const code = searchParams.get("code");
@@ -26,7 +37,9 @@ export async function GET(request: NextRequest) {
       ...(errorDescription && { error_description: errorDescription }),
     });
     const redirectPath = next?.startsWith("/") ? next : "/login";
-    return NextResponse.redirect(`${origin}${redirectPath}?${params.toString()}`);
+    return NextResponse.redirect(
+      `${origin}${redirectPath}?${params.toString()}`,
+    );
   }
 
   if (!code) {
@@ -46,7 +59,13 @@ export async function GET(request: NextRequest) {
         setAll(cookiesToSet) {
           // cookie転写用の保持
           for (const { name, value, options } of cookiesToSet) {
-            request.cookies.set({ name, value, ...options });
+            const hardenedOptions = hardenCookieOptions(options);
+            pendingCookies.push({
+              name,
+              value,
+              options: hardenedOptions,
+            });
+            request.cookies.set({ name, value, ...hardenedOptions });
           }
         },
       },
@@ -137,9 +156,9 @@ export async function GET(request: NextRequest) {
       : `${origin}/mypage`;
     const response = NextResponse.redirect(redirectUrl);
 
-    // cookie転写: request.cookies に保持された cookie を response に適用
-    for (const cookie of request.cookies.getAll()) {
-      response.cookies.set(cookie);
+    // Supabase が更新対象として返した cookie のみを、属性付きで転写する
+    for (const cookie of pendingCookies) {
+      response.cookies.set(cookie.name, cookie.value, cookie.options);
     }
 
     return response;
