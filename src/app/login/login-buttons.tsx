@@ -60,7 +60,7 @@ export function LoginButtons() {
 
       const { origin } = window.location;
       const { error: authError } = await supabase.auth.signInWithOAuth({
-        provider: "x",
+        provider: "twitter",
         options: {
           redirectTo: `${origin}/auth/callback`,
         },

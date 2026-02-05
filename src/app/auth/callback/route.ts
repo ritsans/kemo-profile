@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
         // OAuth ユーザー
         displayName = metadata.full_name || metadata.name || "名無しのけもの";
         avatarUrl = metadata.avatar_url || metadata.picture || null;
-        xUsername = provider === "x" ? metadata.user_name || null : null;
+        xUsername = provider === "twitter" ? metadata.user_name || null : null;
       }
 
       // profiles テーブルにユーザー新規登録レコード挿入
