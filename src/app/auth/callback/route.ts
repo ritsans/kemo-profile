@@ -8,6 +8,10 @@ import {
 import type { Database } from "@/lib/supabase/database.types";
 import { getTrustedAppOrigin } from "@/lib/url";
 
+function isUniqueViolation(error: { code?: string } | null): boolean {
+  return error?.code === "23505";
+}
+
 /**
  * OAuth コールバック処理
  * code を session に交換し、初回ログインの場合はプロフィールを自動作成
@@ -144,8 +148,28 @@ export async function GET(request: NextRequest) {
       });
 
       if (insertError) {
-        console.error("Failed to create profile:", insertError);
-        throw new Error("profile_creation_failed");
+        if (isUniqueViolation(insertError)) {
+          // 同時実行で別リクエストが先に作成した場合は既存プロフィールを採用する
+          const { data: racedProfile, error: racedProfileError } =
+            await supabase
+              .from("profiles")
+              .select("profile_id")
+              .eq("owner_user_id", user.id)
+              .single();
+
+          if (racedProfileError || !racedProfile) {
+            console.error(
+              "Failed to fetch existing profile after unique conflict:",
+              racedProfileError,
+            );
+            throw new Error("profile_creation_failed");
+          }
+
+          profileId = racedProfile.profile_id;
+        } else {
+          console.error("Failed to create profile:", insertError);
+          throw new Error("profile_creation_failed");
+        }
       }
     }
 
