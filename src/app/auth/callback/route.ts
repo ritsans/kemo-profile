@@ -16,14 +16,17 @@ export async function GET(request: NextRequest) {
 
   const errorDescription = searchParams.get("error_description");
 
-  // もしOAuth プロバイダーからのエラーがあればログイン画面へ戻る (ユーザーがキャンセルした場合など)
+  // もしOAuth プロバイダーからのエラーがあればリダイレクト
+  // next パラメータがある場合（linkIdentity 経由）はそちらへ、なければ /login へ
   if (error) {
     console.error("OAuth provider error:", error, errorDescription);
+    const next = searchParams.get("next");
     const params = new URLSearchParams({
       error: error === "access_denied" ? "access_denied" : "auth",
       ...(errorDescription && { error_description: errorDescription }),
     });
-    return NextResponse.redirect(`${origin}/login?${params.toString()}`);
+    const redirectPath = next?.startsWith("/") ? next : "/login";
+    return NextResponse.redirect(`${origin}${redirectPath}?${params.toString()}`);
   }
 
   if (!code) {
@@ -127,8 +130,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // マイページへリダイレクト
-    const redirectUrl = `${origin}/mypage`;
+    // リダイレクト先を決定（linkIdentity 等で next パラメータがある場合はそちらへ）
+    const next = searchParams.get("next");
+    const redirectUrl = next?.startsWith("/")
+      ? `${origin}${next}`
+      : `${origin}/mypage`;
     const response = NextResponse.redirect(redirectUrl);
 
     // cookie転写: request.cookies に保持された cookie を response に適用

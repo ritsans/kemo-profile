@@ -3,12 +3,37 @@ import { redirect } from "next/navigation";
 import { logout } from "@/app/actions/auth";
 import { updateDisplayName } from "@/app/actions/profile";
 import { createClient } from "@/lib/supabase/server";
+import { LinkedProvidersCard } from "./linked-providers-card";
+
+/**
+ * エラーメッセージを日本語化
+ */
+function getErrorMessage(
+  error: string | undefined,
+  description: string | undefined,
+): string | null {
+  if (!error) return null;
+
+  if (description?.includes("already linked to another user")) {
+    return "このアカウントは既に別のユーザーに連携されています";
+  }
+  if (error === "access_denied") {
+    return "連携がキャンセルされました";
+  }
+  return "連携に失敗しました。もう一度お試しください";
+}
+
+interface MyPageProps {
+  searchParams: Promise<{ error?: string; error_description?: string }>;
+}
 
 /**
  * マイページ
  * 認証済みユーザーのプロフィール管理画面
  */
-export default async function MyPage() {
+export default async function MyPage({ searchParams }: MyPageProps) {
+  const { error, error_description } = await searchParams;
+  const errorMessage = getErrorMessage(error, error_description);
   const supabase = await createClient();
 
   // 認証チェック
@@ -38,6 +63,12 @@ export default async function MyPage() {
         <h1 className="mb-8 text-center text-2xl font-bold text-gray-900">
           マイページ
         </h1>
+
+        {errorMessage && (
+          <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">
+            {errorMessage}
+          </div>
+        )}
 
         <div className="rounded-lg bg-white p-6 shadow">
           {/* アバター表示 */}
@@ -83,6 +114,11 @@ export default async function MyPage() {
               </button>
             </div>
           </form>
+
+          {/* 外部ログイン連携 */}
+          <div className="mb-6">
+            <LinkedProvidersCard identities={user.identities} />
+          </div>
 
           {/* プロフィールページへのリンク */}
           <div className="mb-6">
