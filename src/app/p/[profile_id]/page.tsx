@@ -55,6 +55,13 @@ export default async function ProfilePage({ params }: PageProps) {
             {profile.display_name}
           </h1>
 
+          {/* 自己紹介 */}
+          {profile.bio && (
+            <p className="mt-3 whitespace-pre-wrap text-center text-sm text-gray-600">
+              {profile.bio}
+            </p>
+          )}
+
           {/* X (Twitter) リンクボタン */}
           {profile.x_username && (
             <div className="mt-8">

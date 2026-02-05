@@ -52,6 +52,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null;
+          bio: string | null;
           created_at: string;
           display_name: string;
           owner_user_id: string;
@@ -61,6 +62,7 @@ export type Database = {
         };
         Insert: {
           avatar_url?: string | null;
+          bio?: string | null;
           created_at?: string;
           display_name: string;
           owner_user_id: string;
@@ -70,6 +72,7 @@ export type Database = {
         };
         Update: {
           avatar_url?: string | null;
+          bio?: string | null;
           created_at?: string;
           display_name?: string;
           owner_user_id?: string;
@@ -88,6 +91,7 @@ export type Database = {
         Args: { p_profile_id: string };
         Returns: {
           avatar_url: string;
+          bio: string;
           display_name: string;
           profile_id: string;
           x_username: string;

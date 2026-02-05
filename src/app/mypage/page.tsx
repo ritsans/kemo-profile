@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { logout } from "@/app/actions/auth";
-import { updateDisplayName } from "@/app/actions/profile";
+import { updateBio, updateDisplayName } from "@/app/actions/profile";
 import { createClient } from "@/lib/supabase/server";
 import { LinkedProvidersCard } from "./linked-providers-card";
 
@@ -48,7 +48,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
   // profileテーブルから自分のプロフィールを取得
   const { data: profile } = await supabase
     .from("profiles")
-    .select("profile_id, display_name, avatar_url")
+    .select("profile_id, display_name, avatar_url, bio")
     .eq("owner_user_id", user.id)
     .single();
 
@@ -109,6 +109,36 @@ export default async function MyPage({ searchParams }: MyPageProps) {
               <button
                 type="submit"
                 className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                保存
+              </button>
+            </div>
+          </form>
+
+          {/* 自己紹介変更フォーム */}
+          <form action={updateBio} className="mb-6">
+            <label
+              htmlFor="bio"
+              className="mb-2 block text-sm font-medium text-gray-700"
+            >
+              自己紹介
+            </label>
+            <textarea
+              id="bio"
+              name="bio"
+              defaultValue={profile.bio ?? ""}
+              maxLength={160}
+              rows={3}
+              placeholder="自己紹介を入力してください（160文字以内）"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            <div className="mt-1 flex items-center justify-between">
+              <span className="text-xs text-gray-400">
+                {profile.bio?.length ?? 0} / 160
+              </span>
+              <button
+                type="submit"
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 保存
               </button>
