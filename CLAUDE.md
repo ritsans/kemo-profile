@@ -66,6 +66,10 @@ mcp__plugin_supabase_supabase__apply_migration({
 
 ## Rules for Implementation and Revision Proposals
 
+### Step-by-Step Verification
+
+* For complex flows (such as user authentication or data pipelines), explain each step sequentially, **pausing** before proceeding to the next step to confirm.
+
 ### Basic Principles
 
 1. **Present changes in diff format** (exception: new file creation)
