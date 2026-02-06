@@ -35,6 +35,35 @@ pnpm start
 pnpm lint
 ```
 
+## Supabase Migration
+
+**IMPORTANT**: When executing Supabase migrations, **always use the MCP (Model Context Protocol) server tools**, not the Supabase CLI.
+
+### Migration Workflow
+
+1. Create migration file in `supabase/migrations/` with naming: `XXXXX_migration_name.sql`
+2. Apply migration using MCP tool: `mcp__plugin_supabase_supabase__apply_migration`
+3. **Do NOT use** `supabase db push` or other Supabase CLI commands
+
+### Example
+
+```typescript
+// Use MCP tool
+mcp__plugin_supabase_supabase__apply_migration({
+  project_id: "sghmdallnsffwnuljwmg",
+  name: "migration_name",
+  query: "SQL content here"
+})
+```
+
+### Available MCP Tools
+
+- `list_projects`: List all Supabase projects
+- `apply_migration`: Apply SQL migration to database
+- `execute_sql`: Execute raw SQL (use for queries, not DDL)
+- `list_tables`: List tables in schema
+- `get_advisors`: Check for security/performance issues
+
 ## Rules for Implementation and Revision Proposals
 
 ### Basic Principles
@@ -69,6 +98,31 @@ pnpm lint
 Code formatting runs automatically via hooks. Run `pnpm lint` to check for issues. Biome enforces Next.js and React recommended rules.
 
 Do not perform linter behavior. Delegate all linting to biome.
+
+### Environment Variables
+
+**IMPORTANT**: Always use the `env()` helper function from `@/lib/env` to access environment variables.
+
+- **DO NOT use** `process.env.XXX!` (non-null assertion operator) - violates Biome's `noNonNullAssertion` rule
+- **DO use** `env("XXX")` from `@/lib/env`
+
+```typescript
+// ❌ BAD - Biome lint error
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
+// ✅ GOOD
+import { env } from "@/lib/env";
+const url = env("NEXT_PUBLIC_SUPABASE_URL");
+```
+
+The `env()` helper throws an error at runtime if the variable is undefined, providing better error messages than silent undefined access.
+
+### SVG Icons
+
+ All decorative SVG icons must include `aria-hidden="true"` to satisfy Biome's `a11y/noSvgWithoutTitle` rule.
+
+- Decorative icons (icons with adjacent text labels): Add `aria-hidden="true"`
+- Standalone meaningful icons: Add `<title>` element inside `<svg>`
 
 ## Architecture
 

@@ -1,11 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { hardenCookieOptions } from "@/lib/supabase/cookies";
 
 /**
- * Supabase認証セッション管理用のMiddleware
- * すべてのリクエストでセッション状態を更新する
+ * Middleware (名前はproxyだが実態はMiddleware)
+ * Supabase認証セッション管理用のProxy
+ * すべてのリクエストでセッション状態を更新し常にセッションが最新に保たれる仕組み
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -19,14 +21,22 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          for (const { name, value } of cookiesToSet) {
-            request.cookies.set(name, value);
+          for (const { name, value, options } of cookiesToSet) {
+            request.cookies.set({
+              name,
+              value,
+              ...hardenCookieOptions(options),
+            });
           }
           supabaseResponse = NextResponse.next({
             request,
           });
           for (const { name, value, options } of cookiesToSet) {
-            supabaseResponse.cookies.set(name, value, options);
+            supabaseResponse.cookies.set(
+              name,
+              value,
+              hardenCookieOptions(options),
+            );
           }
         },
       },

@@ -41,26 +41,26 @@
 
 ## 5. 認証UI・フロー
 
-- [ ] ログインページ (`/login`) の作成
+- [x] ログインページ (`/login`) の作成
   - Google OAuth ログインボタン
   - X OAuth ログインボタン
-- [ ] 認証コールバック処理 (`/auth/callback/route.ts`)
+- [x] 認証コールバック処理 (`/auth/callback/route.ts`)
   - 認証コード交換
   - セッション確立
-- [ ] ログアウト機能
+- [x] ログアウト機能
 
 ## 6. 初回ログイン時のプロフィール自動作成
 
-- [ ] 初回ログイン検出ロジック（`profiles` テーブルに該当レコードがあるか確認）
-- [ ] OAuthメタデータの取得
+- [x] 初回ログイン検出ロジック（`profiles` テーブルに該当レコードがあるか確認）
+- [x] OAuthメタデータの取得
   - X OAuth: `user_name`, `name`, `profile_image_url` → `x_username`, `display_name`, `avatar_url`
   - Google OAuth: `name`, `picture` → `display_name`, `avatar_url`（`x_username` は null）
-- [ ] `profiles` テーブルへの自動INSERT
-- [ ] プロフィール作成後 `/p/{profile_id}` へリダイレクト
+- [x] `profiles` テーブルへの自動INSERT
+- [x] プロフィール作成後 `/p/{profile_id}` へリダイレクト
 
 ## 7. マイページアクセス
 
-- [ ] マイページルート (`/my`) の作成
+- [x] マイページルート (`/my`) の作成
   - 認証ガード: 未ログインの場合は `/login` へリダイレクト
   - ログイン済みの場合は自分の `/p/{profile_id}` へリダイレクト
 - [ ] ヘッダー/ナビゲーションにマイページリンクを追加（認証状態に応じて表示切替）
