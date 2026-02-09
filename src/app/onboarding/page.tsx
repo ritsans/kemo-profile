@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { generateSuggestedSlug } from "@/lib/utils/slug";
 import { OnboardingWizard } from "./onboarding-wizard";
 
 /**
@@ -34,13 +35,16 @@ export default async function OnboardingPage() {
     redirect("/mypage");
   }
 
+  // slug の初期値候補を生成（既存の slug がない場合）
+  const suggestedSlug = profile.slug || generateSuggestedSlug(user);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
       <div className="w-full max-w-md">
         <OnboardingWizard
           displayName={profile.display_name}
           bio={profile.bio}
-          slug={profile.slug}
+          slug={suggestedSlug}
         />
       </div>
     </div>

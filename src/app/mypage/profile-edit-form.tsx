@@ -116,21 +116,16 @@ export function ProfileEditForm({
           カスタムURL
         </label>
         <div className="flex gap-2">
-          <div className="flex flex-1 items-center">
-            <span className="rounded-l-md border border-r-0 border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-500">
-              /p/@
-            </span>
-            <input
-              type="text"
-              id="slug"
-              name="slug"
-              defaultValue={slug ?? ""}
-              maxLength={20}
-              disabled={isSlugPending}
-              placeholder="my_name"
-              className="w-full rounded-r-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
-            />
-          </div>
+          <input
+            type="text"
+            id="slug"
+            name="slug"
+            defaultValue={slug ?? ""}
+            maxLength={20}
+            disabled={isSlugPending}
+            placeholder="my_name"
+            className="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+          />
           <button
             type="submit"
             disabled={isSlugPending}

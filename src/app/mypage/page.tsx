@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { logout } from "@/app/actions/auth";
 import { getOAuthErrorMessage } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/server";
+import { generateSuggestedSlug } from "@/lib/utils/slug";
 import { LinkedProvidersCard } from "./linked-providers-card";
 import { ProfileEditForm } from "./profile-edit-form";
 
@@ -48,8 +49,11 @@ export default async function MyPage({ searchParams }: MyPageProps) {
   }
 
   const profilePath = profile.slug
-    ? `/p/@${profile.slug}`
+    ? `/p/${profile.slug}`
     : `/p/${profile.profile_id}`;
+
+  // slug の初期値候補を生成（既存の slug がない場合）
+  const suggestedSlug = profile.slug || generateSuggestedSlug(user);
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8">
@@ -86,7 +90,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
           <ProfileEditForm
             displayName={profile.display_name}
             bio={profile.bio}
-            slug={profile.slug}
+            slug={suggestedSlug}
           />
 
           {/* 外部ログイン連携 */}

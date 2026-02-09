@@ -199,10 +199,7 @@ export function OnboardingWizard({
             >
               カスタムURL
             </label>
-            <div className="mb-4 flex items-center">
-              <span className="rounded-l-md border border-r-0 border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-500">
-                /p/@
-              </span>
+            <div className="mb-4">
               <input
                 type="text"
                 id="slug"
@@ -211,7 +208,7 @@ export function OnboardingWizard({
                 maxLength={20}
                 disabled={isSlugPending}
                 placeholder="my_name"
-                className="w-full rounded-r-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
               />
             </div>
             <p className="mb-4 text-xs text-gray-400">
