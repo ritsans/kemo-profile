@@ -8,9 +8,37 @@ import { OnboardingWizard } from "./onboarding-wizard";
  * 初回ログイン後のプロフィール設定ガイド
  */
 export default async function OnboardingPage() {
+  // 開発用バイパス機能（環境変数で有効化）
+  const bypassAuth = process.env.BYPASS_ONBOARDING_AUTH === "true";
+
+  if (bypassAuth) {
+    // バイパスモード: ダミーデータでレンダリング
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
+        <div className="w-full max-w-md">
+          {/* 開発モード警告バナー */}
+          <div className="mb-4 rounded-md bg-yellow-100 border-2 border-yellow-400 px-4 py-3">
+            <p className="text-sm font-bold text-yellow-800">
+              ⚠️ 開発モード（認証バイパス中）
+            </p>
+            <p className="text-xs text-yellow-700">
+              BYPASS_ONBOARDING_AUTH=true が有効です
+            </p>
+          </div>
+
+          <OnboardingWizard
+            displayName="サンプルユーザー"
+            bio="これはプレビュー用のダミーデータです"
+            slug="sample_user"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // 通常モード: 認証チェック
   const supabase = await createClient();
 
-  // 認証チェック
   const {
     data: { user },
   } = await supabase.auth.getUser();
