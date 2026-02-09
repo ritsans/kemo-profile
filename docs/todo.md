@@ -65,6 +65,20 @@
   - ログイン済みの場合は自分の `/p/{profile_id}` へリダイレクト
 - [ ] ヘッダー/ナビゲーションにマイページリンクを追加（認証状態に応じて表示切替）
 
+## 8. オンボーディング
+
+- [x] DBマイグレーション: `slug` カラム + `onboarding_completed` フラグ追加
+- [x] `public_get_profile_by_slug` 関数作成
+- [x] Server Actions: `updateSlug`, `completeOnboarding` 追加
+- [x] Auth Callback: 初回ログイン → `/onboarding` リダイレクト
+- [x] オンボーディングページ作成（3ステップウィザード）
+  - Step 1: ユーザー名確認
+  - Step 2: 自己紹介入力（スキップ可）
+  - Step 3: カスタムURL設定（スキップ可）
+- [x] MyPage: オンボーディング未完了ガード追加
+- [x] 公開プロフィール: slug 解決（`/p/@slug` 対応）
+- [x] MyPage 編集フォーム: slug 編集セクション追加
+
 ---
 
 ## 完了条件

@@ -1,15 +1,24 @@
 "use client";
 
 import { useActionState } from "react";
-import { updateBio, updateDisplayName } from "@/app/actions/profile";
+import {
+  updateBio,
+  updateDisplayName,
+  updateSlug,
+} from "@/app/actions/profile";
 import type { ActionResult } from "@/lib/types/action";
 
 interface ProfileEditFormProps {
   displayName: string;
   bio: string | null;
+  slug: string | null;
 }
 
-export function ProfileEditForm({ displayName, bio }: ProfileEditFormProps) {
+export function ProfileEditForm({
+  displayName,
+  bio,
+  slug,
+}: ProfileEditFormProps) {
   const [displayNameState, displayNameAction, isDisplayNamePending] =
     useActionState<ActionResult | null, FormData>(updateDisplayName, null);
 
@@ -17,6 +26,11 @@ export function ProfileEditForm({ displayName, bio }: ProfileEditFormProps) {
     ActionResult | null,
     FormData
   >(updateBio, null);
+
+  const [slugState, slugAction, isSlugPending] = useActionState<
+    ActionResult | null,
+    FormData
+  >(updateSlug, null);
 
   return (
     <>
@@ -89,6 +103,49 @@ export function ProfileEditForm({ displayName, bio }: ProfileEditFormProps) {
           <p className="mt-2 text-sm text-red-600">{bioState.error}</p>
         )}
         {bioState?.success && (
+          <p className="mt-2 text-sm text-green-600">保存しました</p>
+        )}
+      </form>
+
+      {/* カスタムURL変更フォーム */}
+      <form action={slugAction} className="mb-6">
+        <label
+          htmlFor="slug"
+          className="mb-2 block text-sm font-medium text-gray-700"
+        >
+          カスタムURL
+        </label>
+        <div className="flex gap-2">
+          <div className="flex flex-1 items-center">
+            <span className="rounded-l-md border border-r-0 border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-500">
+              /p/@
+            </span>
+            <input
+              type="text"
+              id="slug"
+              name="slug"
+              defaultValue={slug ?? ""}
+              maxLength={20}
+              disabled={isSlugPending}
+              placeholder="my_name"
+              className="w-full rounded-r-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isSlugPending}
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400"
+          >
+            {isSlugPending ? "保存中..." : "保存"}
+          </button>
+        </div>
+        <p className="mt-1 text-xs text-gray-400">
+          英小文字で始まり、英小文字・数字・アンダースコアのみ、3〜20文字
+        </p>
+        {slugState && !slugState.success && (
+          <p className="mt-2 text-sm text-red-600">{slugState.error}</p>
+        )}
+        {slugState?.success && (
           <p className="mt-2 text-sm text-green-600">保存しました</p>
         )}
       </form>

@@ -55,8 +55,10 @@ export type Database = {
           bio: string | null;
           created_at: string;
           display_name: string;
+          onboarding_completed: boolean;
           owner_user_id: string;
           profile_id: string;
+          slug: string | null;
           updated_at: string;
           x_username: string | null;
         };
@@ -65,8 +67,10 @@ export type Database = {
           bio?: string | null;
           created_at?: string;
           display_name: string;
+          onboarding_completed?: boolean;
           owner_user_id: string;
           profile_id: string;
+          slug?: string | null;
           updated_at?: string;
           x_username?: string | null;
         };
@@ -75,8 +79,10 @@ export type Database = {
           bio?: string | null;
           created_at?: string;
           display_name?: string;
+          onboarding_completed?: boolean;
           owner_user_id?: string;
           profile_id?: string;
+          slug?: string | null;
           updated_at?: string;
           x_username?: string | null;
         };
@@ -94,6 +100,17 @@ export type Database = {
           bio: string;
           display_name: string;
           profile_id: string;
+          x_username: string;
+        }[];
+      };
+      public_get_profile_by_slug: {
+        Args: { p_slug: string };
+        Returns: {
+          avatar_url: string;
+          bio: string;
+          display_name: string;
+          profile_id: string;
+          slug: string;
           x_username: string;
         }[];
       };

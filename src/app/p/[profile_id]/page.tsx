@@ -2,6 +2,14 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+interface ProfileData {
+  profile_id: string;
+  display_name: string;
+  avatar_url: string | null;
+  bio: string | null;
+  x_username: string | null;
+}
+
 interface PageProps {
   params: Promise<{
     profile_id: string;
@@ -16,15 +24,27 @@ export default async function ProfilePage({ params }: PageProps) {
   const { profile_id } = await params;
   const supabase = await createClient();
 
-  // プロフィール取得
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("profile_id", profile_id)
-    .single();
-
-  if (error || !profile) {
-    notFound();
+  // slug 解決: @で始まる場合は slug 検索
+  let profile: ProfileData;
+  if (profile_id.startsWith("@")) {
+    const slug = profile_id.slice(1);
+    const { data, error } = await supabase.rpc("public_get_profile_by_slug", {
+      p_slug: slug,
+    });
+    if (error || !data || data.length === 0) {
+      notFound();
+    }
+    profile = data[0];
+  } else {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("profile_id", profile_id)
+      .single();
+    if (error || !data) {
+      notFound();
+    }
+    profile = data;
   }
 
   return (

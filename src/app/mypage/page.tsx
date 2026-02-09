@@ -31,7 +31,9 @@ export default async function MyPage({ searchParams }: MyPageProps) {
   // profileテーブルから自分のプロフィールを取得
   const { data: profile } = await supabase
     .from("profiles")
-    .select("profile_id, display_name, avatar_url, bio")
+    .select(
+      "profile_id, display_name, avatar_url, bio, slug, onboarding_completed",
+    )
     .eq("owner_user_id", user.id)
     .single();
 
@@ -39,6 +41,15 @@ export default async function MyPage({ searchParams }: MyPageProps) {
     // プロフィールが見つからない場合(エッジケース)は /login へ
     redirect("/login");
   }
+
+  // オンボーディング未完了 → オンボーディングへリダイレクト
+  if (!profile.onboarding_completed) {
+    redirect("/onboarding");
+  }
+
+  const profilePath = profile.slug
+    ? `/p/@${profile.slug}`
+    : `/p/${profile.profile_id}`;
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8">
@@ -75,6 +86,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
           <ProfileEditForm
             displayName={profile.display_name}
             bio={profile.bio}
+            slug={profile.slug}
           />
 
           {/* 外部ログイン連携 */}
@@ -85,7 +97,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
           {/* プロフィールページへのリンク */}
           <div className="mb-6">
             <a
-              href={`/p/${profile.profile_id}`}
+              href={profilePath}
               className="block rounded-md border border-gray-300 px-4 py-2 text-center text-gray-700 hover:bg-gray-50"
             >
               公開プロフィールを見る
