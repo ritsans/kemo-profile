@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { isUniqueViolation } from "@/lib/errors/supabase";
 import { generateProfileId } from "@/lib/id";
 import {
   hardenCookieOptions,
@@ -7,10 +8,6 @@ import {
 } from "@/lib/supabase/cookies";
 import type { Database } from "@/lib/supabase/database.types";
 import { getTrustedAppOrigin } from "@/lib/url";
-
-function isUniqueViolation(error: { code?: string } | null): boolean {
-  return error?.code === "23505";
-}
 
 /**
  * OAuth コールバック処理

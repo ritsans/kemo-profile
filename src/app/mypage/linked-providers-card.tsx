@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getLinkIdentityErrorMessage } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -66,7 +67,6 @@ function XIcon() {
   );
 }
 
-
 /**
  * チェックマークアイコン
  */
@@ -100,19 +100,6 @@ function ProviderIcon({ provider }: { provider: ProviderId }) {
 }
 
 /**
- * エラーメッセージを日本語化
- */
-function getErrorMessage(errorMessage: string): string {
-  if (errorMessage.includes("already exists")) {
-    return "このアカウントは既に別のユーザーに連携されています";
-  }
-  if (errorMessage.includes("not enabled")) {
-    return "このログイン方法は現在利用できません";
-  }
-  return "連携に失敗しました。もう一度お試しください";
-}
-
-/**
  * 外部ログイン連携カード
  * 連携済みのOAuthプロバイダーを表示し、未連携のプロバイダーへの連携を誘導する
  */
@@ -141,7 +128,7 @@ export function LinkedProvidersCard({ identities }: LinkedProvidersCardProps) {
     });
 
     if (linkError) {
-      setError(getErrorMessage(linkError.message));
+      setError(getLinkIdentityErrorMessage(linkError));
       setIsLoading((prev) => ({ ...prev, [provider]: false }));
     }
     // 成功時はリダイレクトされるため、ローディング状態はリセット不要
