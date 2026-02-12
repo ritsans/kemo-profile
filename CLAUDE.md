@@ -37,6 +37,21 @@ pnpm lint
 
 ## Rules for Implementation and Revision Proposals
 
+### Specification-First Development
+
+**CRITICAL**: Before implementing any new feature or significant behavior change:
+
+1. **Check if the change is documented in `docs/spec.md`**
+2. **If NOT documented, prompt the user to update `docs/spec.md` first**
+3. **Only proceed with implementation after the specification is updated**
+
+This ensures:
+- All stakeholders understand what is being built
+- The implementation matches the intended design
+- Documentation stays synchronized with code
+
+**Exception**: Bug fixes and code style improvements do not require spec updates.
+
 ### Step-by-Step Verification
 
 * For complex flows (such as user authentication or data pipelines), explain each step sequentially, **pausing** before proceeding to the next step to confirm.
