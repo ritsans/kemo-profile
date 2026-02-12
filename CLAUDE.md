@@ -17,7 +17,7 @@ See `docs/spec.md` for complete MVP specification. for the TODOs to be addressed
 - **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS v4
 - **Linter/Formatter**: Biome *(not ESLint/Prettier)*
-- **Database**: Supabase (Cloud project via Supabase CLI) + IndexedDB for local data
+- **Database**: Supabase (Cloud project via Supabase CLI)
 
 ## Development Commands
 
@@ -35,35 +35,6 @@ pnpm start
 pnpm lint
 ```
 
-## Supabase Migration
-
-**IMPORTANT**: When executing Supabase migrations, **always use the MCP (Model Context Protocol) server tools**, not the Supabase CLI.
-
-### Migration Workflow
-
-1. Create migration file in `supabase/migrations/` with naming: `XXXXX_migration_name.sql`
-2. Apply migration using MCP tool: `mcp__plugin_supabase_supabase__apply_migration`
-3. **Do NOT use** `supabase db push` or other Supabase CLI commands
-
-### Example
-
-```typescript
-// Use MCP tool
-mcp__plugin_supabase_supabase__apply_migration({
-  project_id: "sghmdallnsffwnuljwmg",
-  name: "migration_name",
-  query: "SQL content here"
-})
-```
-
-### Available MCP Tools
-
-- `list_projects`: List all Supabase projects
-- `apply_migration`: Apply SQL migration to database
-- `execute_sql`: Execute raw SQL (use for queries, not DDL)
-- `list_tables`: List tables in schema
-- `get_advisors`: Check for security/performance issues
-
 ## Rules for Implementation and Revision Proposals
 
 ### Step-by-Step Verification
@@ -72,9 +43,8 @@ mcp__plugin_supabase_supabase__apply_migration({
 
 ### Basic Principles
 
-1. **Present changes in diff format** (exception: new file creation)
-2. **Always state the reason for the change**: "Why this change is necessary"
-3. **Clearly specify the scope of impact**: "Files/functions affected by this change"
+1. **Always state the reason for the change**: "Why this change is necessary"
+2. **Clearly specify the scope of impact**: "Files/functions affected by this change"
 
 ### Task Management
 
@@ -98,8 +68,7 @@ mcp__plugin_supabase_supabase__apply_migration({
 
 **IMPORTANT**: This project uses Biome, not ESLint or Prettier.
 
-- Code rules are defined under the `"javascript"` key in `biome.json`.
-Code formatting runs automatically via hooks. Run `pnpm lint` to check for issues. Biome enforces Next.js and React recommended rules.
+Code formatting runs automatically via hooks. Run `pnpm lint` to check for issues.
 
 Do not perform linter behavior. Delegate all linting to biome.
 
@@ -132,21 +101,10 @@ The `env()` helper throws an error at runtime if the variable is undefined, prov
 
 ### URL Structure
 
-- Public profile pages: `/p/{profile_id}`
+- Public profile pages: `/p/{profile_id}` or `/p/@{slug}`
   - `profile_id`: 15-character base62 random ID (cryptographically secure, not `Math.random()`)
+  - `slug`: Optional custom URL (3-20 chars, lowercase letters, numbers, underscores, must start with lowercase letter)
   - Must be URL-safe and non-guessable
-
-### Data Architecture (Planned)
-
-**Cloud Database:**
-- `profiles`: Contains `profile_id` (PK), `owner_user_id`, `display_name`, `avatar_url`, `x_username`, timestamps
-- `bookmarks`: Contains `user_id`, `profile_id` (unique constraint on pair), `deleted_at` (soft delete), timestamps
-
-**Client-side IndexedDB:**
-- `view_history`: Auto-saved on profile view, max 300 items (old entries deleted on overflow)
-  - Stores: `profile_id`, `last_viewed_at`, `display_name`, `x_username`
-- `saved_local`: User bookmarks saved locally, synced to cloud only when logged in
-  - Supports soft delete (`deleted_at`)
 
 ### Key Design Principles
 
@@ -166,7 +124,7 @@ The `env()` helper throws an error at runtime if the variable is undefined, prov
 ##### Pragmatics
 
 - State: server state > URL > component > Context. Avoid external state libs until clearly necessary.
-- Tailwind: allow duplication; extract only if the exact class set appears 3+ times in one file.
+
 - TypeScript: dedupe types only if used in 2+ places and same meaning; keep API DTOs separate from domain types.
 
 ##### Pragmatic Coding (no premature DRY)
@@ -189,43 +147,19 @@ The `env()` helper throws an error at runtime if the variable is undefined, prov
 **Required fields:**
 - `display_name`: Handle name (mandatory)
 - `avatar`: Avatar image (required, placeholder allowed until complete)
-- `x_username`: X (Twitter) username (**optional**, normalized from URL or @username input)
+
+**Optional fields:**
+- `x_username`: X (Twitter) username (normalized from URL or @username input)
   - Auto-populated for X OAuth users
   - Null for Google OAuth users (can be added later via `/edit`)
+- `bio`: Self-introduction text (max 160 chars)
+- `slug`: Custom URL identifier for `/p/@{slug}` format (3-20 chars, unique)
 
 **First-view priority**: Display these three elements immediately on profile load with large, tappable X link button (X link hidden/disabled if `x_username` is null).
-
-### Authentication Flow
-
-**OAuth Providers:**
-- X (Twitter) OAuth 2.0
-- Google OAuth 2.0
-
-**First login auto-creation:**
-- Auto-creates `profiles` record with random `profile_id` (base62, 15 chars, cryptographically secure)
-- Sets `profiles.owner_user_id = user_id`
-- Populates metadata from OAuth provider:
-  - **X OAuth**: `display_name`, `avatar_url`, `x_username` (from `user_name`)
-  - **Google OAuth**: `display_name`, `avatar_url` (from `name`, `picture`), `x_username` remains null
-- Redirects to `/p/{profile_id}` (public profile page) after creation
-- No automatic redirect to `/edit` - users navigate manually if needed
-
-**Viewing & bookmarking:**
-- Non-logged-in users can view profiles and save bookmarks locally
-- Logged-in users get bookmark cloud sync via optimistic updates
-
-## Path Aliases
-
-Use `@/*` for imports from `src/`:
-
-```typescript
-import { Component } from "@/components/Component"
-```
 
 ## Out of Scope for MVP
 
 - Event mode (lightweight routing, PWA optimization)
 - Bookmark expiration/cleanup
-- Additional SNS links beyond X (Discord, Pixiv - architecture should support future addition)
 - Mutual exchange/approval/auto-follow features
 - Cloud sync for view history

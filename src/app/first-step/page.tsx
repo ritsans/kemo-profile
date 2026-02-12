@@ -14,12 +14,12 @@ export default async function OnboardingPage() {
   if (bypassAuth) {
     // バイパスモード: ダミーデータでレンダリング
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
-        <div className="w-full max-w-md">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 px-4 py-8">
+        <div className="w-full max-w-lg">
           {/* 開発モード警告バナー */}
-          <div className="mb-4 rounded-md bg-yellow-100 border-2 border-yellow-400 px-4 py-3">
+          <div className="mb-4 rounded-lg border-2 border-yellow-400 bg-yellow-100 px-4 py-3">
             <p className="text-sm font-bold text-yellow-800">
-              ⚠️ 開発モード（認証バイパス中）
+              開発モード（認証バイパス中）
             </p>
             <p className="text-xs text-yellow-700">
               BYPASS_ONBOARDING_AUTH=true が有効です
@@ -30,6 +30,7 @@ export default async function OnboardingPage() {
             displayName="サンプルユーザー"
             bio="これはプレビュー用のダミーデータです"
             slug="sample_user"
+            isBypassMode
           />
         </div>
       </div>
@@ -67,8 +68,8 @@ export default async function OnboardingPage() {
   const suggestedSlug = profile.slug || generateSuggestedSlug(user);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
-      <div className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 px-4 py-8">
+      <div className="w-full max-w-lg">
         <OnboardingWizard
           displayName={profile.display_name}
           bio={profile.bio}

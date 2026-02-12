@@ -179,7 +179,7 @@ export async function GET(request: NextRequest) {
     // linkIdentity 等で next パラメータがある場合はそちらへ
     // 新規ユーザーはオンボーディングへ、既存ユーザーはマイページへ
     const next = searchParams.get("next");
-    const defaultPath = isNewUser ? "/onboarding" : "/mypage";
+    const defaultPath = isNewUser ? "/first-step" : "/mypage";
     const redirectUrl = next?.startsWith("/")
       ? `${origin}${next}`
       : `${origin}${defaultPath}`;

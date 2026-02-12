@@ -45,7 +45,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
 
   // オンボーディング未完了 → オンボーディングへリダイレクト
   if (!profile.onboarding_completed) {
-    redirect("/onboarding");
+    redirect("/first-step");
   }
 
   const profilePath = profile.slug
