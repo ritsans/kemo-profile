@@ -2,12 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
-import { type MagicLinkResult, sendMagicLink } from "@/app/actions/magic-link";
+import { sendMagicLink } from "@/app/actions/magic-link";
+import type { ActionResult } from "@/lib/types/action";
 
 export function EmailLoginForm() {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState<
-    MagicLinkResult | null,
+    ActionResult | null,
     FormData
   >(sendMagicLink, null);
 
@@ -28,7 +29,9 @@ export function EmailLoginForm() {
         className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm
                    focus:border-gray-400 focus:outline-none disabled:bg-gray-100"
       />
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state && !state.success && (
+        <p className="text-sm text-red-600">{state.error}</p>
+      )}
       <button
         type="submit"
         disabled={isPending}

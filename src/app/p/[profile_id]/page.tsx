@@ -2,6 +2,15 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+interface ProfileData {
+  profile_id: string;
+  display_name: string;
+  avatar_url: string | null;
+  bio: string | null;
+  x_username: string | null;
+  slug: string | null;
+}
+
 interface PageProps {
   params: Promise<{
     profile_id: string;
@@ -16,15 +25,28 @@ export default async function ProfilePage({ params }: PageProps) {
   const { profile_id } = await params;
   const supabase = await createClient();
 
-  // プロフィール取得
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("profile_id", profile_id)
-    .single();
+  // profile_id（15文字の base62）か slug かを形式で判別
+  const isProfileId = /^[a-zA-Z0-9]{15}$/.test(profile_id);
 
-  if (error || !profile) {
-    notFound();
+  let profile: ProfileData;
+  if (isProfileId) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("profile_id, display_name, avatar_url, bio, x_username, slug")
+      .eq("profile_id", profile_id)
+      .single();
+    if (error || !data) {
+      notFound();
+    }
+    profile = data;
+  } else {
+    const { data, error } = await supabase.rpc("public_get_profile_by_slug", {
+      p_slug: profile_id,
+    });
+    if (error || !data || data.length === 0) {
+      notFound();
+    }
+    profile = data[0];
   }
 
   return (
@@ -92,9 +114,9 @@ export default async function ProfilePage({ params }: PageProps) {
           )}
         </div>
 
-        {/* プロフィールID表示（開発用） */}
+        {/* プロフィールURL表示 */}
         <div className="text-center text-xs text-gray-400">
-          ID: {profile_id}
+          {profile.slug || `ID: ${profile.profile_id}`}
         </div>
       </div>
     </div>

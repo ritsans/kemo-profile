@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { isUniqueViolation } from "@/lib/errors/supabase";
 import { generateProfileId } from "@/lib/id";
 import {
   hardenCookieOptions,
@@ -7,10 +8,6 @@ import {
 } from "@/lib/supabase/cookies";
 import type { Database } from "@/lib/supabase/database.types";
 import { getTrustedAppOrigin } from "@/lib/url";
-
-function isUniqueViolation(error: { code?: string } | null): boolean {
-  return error?.code === "23505";
-}
 
 /**
  * OAuth コールバック処理
@@ -111,6 +108,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     let profileId: string;
+    let isNewUser = false;
 
     if (existingProfile) {
       // 既存ユーザー
@@ -166,18 +164,25 @@ export async function GET(request: NextRequest) {
           }
 
           profileId = racedProfile.profile_id;
+          // race condition の場合は既存ユーザーとして扱う
         } else {
           console.error("Failed to create profile:", insertError);
           throw new Error("profile_creation_failed");
         }
+      } else {
+        // 正常にプロフィール作成成功 → 新規ユーザー
+        isNewUser = true;
       }
     }
 
-    // リダイレクト先を決定（linkIdentity 等で next パラメータがある場合はそちらへ）
+    // リダイレクト先を決定
+    // linkIdentity 等で next パラメータがある場合はそちらへ
+    // 新規ユーザーはオンボーディングへ、既存ユーザーはマイページへ
     const next = searchParams.get("next");
+    const defaultPath = isNewUser ? "/first-step" : "/mypage";
     const redirectUrl = next?.startsWith("/")
       ? `${origin}${next}`
-      : `${origin}/mypage`;
+      : `${origin}${defaultPath}`;
     const response = NextResponse.redirect(redirectUrl);
 
     // Supabase が更新対象として返した cookie のみを、属性付きで転写する

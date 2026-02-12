@@ -1,17 +1,14 @@
 "use server";
 
+import { isRateLimitError } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/server";
+import type { ActionResult } from "@/lib/types/action";
 import { getTrustedAppOrigin } from "@/lib/url";
 
-export type MagicLinkResult = {
-  success: boolean;
-  error?: string;
-};
-
 export async function sendMagicLink(
-  _prevState: MagicLinkResult | null,
+  _prevState: ActionResult | null,
   formData: FormData,
-): Promise<MagicLinkResult> {
+): Promise<ActionResult> {
   const email = formData.get("email") as string;
 
   if (!email || !email.includes("@")) {
@@ -31,10 +28,10 @@ export async function sendMagicLink(
   // セキュリティ: アカウント列挙防止のため常に成功を返す
   if (error) {
     console.error("Magic link error:", error.message);
-    if (error.message.includes("rate")) {
+    if (isRateLimitError(error)) {
       return { success: false, error: "しばらく待ってから再試行してください" };
     }
   }
 
-  return { success: true };
+  return { success: true, data: undefined };
 }

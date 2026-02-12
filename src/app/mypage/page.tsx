@@ -1,27 +1,11 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { logout } from "@/app/actions/auth";
-import { updateBio, updateDisplayName } from "@/app/actions/profile";
+import { getOAuthErrorMessage } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/server";
+import { generateSuggestedSlug } from "@/lib/utils/slug";
 import { LinkedProvidersCard } from "./linked-providers-card";
-
-/**
- * エラーメッセージを日本語化
- */
-function getErrorMessage(
-  error: string | undefined,
-  description: string | undefined,
-): string | null {
-  if (!error) return null;
-
-  if (description?.includes("already linked to another user")) {
-    return "このアカウントは既に別のユーザーに連携されています";
-  }
-  if (error === "access_denied") {
-    return "連携がキャンセルされました";
-  }
-  return "連携に失敗しました。もう一度お試しください";
-}
+import { ProfileEditForm } from "./profile-edit-form";
 
 interface MyPageProps {
   searchParams: Promise<{ error?: string; error_description?: string }>;
@@ -33,7 +17,7 @@ interface MyPageProps {
  */
 export default async function MyPage({ searchParams }: MyPageProps) {
   const { error, error_description } = await searchParams;
-  const errorMessage = getErrorMessage(error, error_description);
+  const errorMessage = getOAuthErrorMessage(error, error_description);
   const supabase = await createClient();
 
   // 認証チェック
@@ -48,7 +32,9 @@ export default async function MyPage({ searchParams }: MyPageProps) {
   // profileテーブルから自分のプロフィールを取得
   const { data: profile } = await supabase
     .from("profiles")
-    .select("profile_id, display_name, avatar_url, bio")
+    .select(
+      "profile_id, display_name, avatar_url, bio, slug, onboarding_completed",
+    )
     .eq("owner_user_id", user.id)
     .single();
 
@@ -56,6 +42,18 @@ export default async function MyPage({ searchParams }: MyPageProps) {
     // プロフィールが見つからない場合(エッジケース)は /login へ
     redirect("/login");
   }
+
+  // オンボーディング未完了 → オンボーディングへリダイレクト
+  if (!profile.onboarding_completed) {
+    redirect("/first-step");
+  }
+
+  const profilePath = profile.slug
+    ? `/p/${profile.slug}`
+    : `/p/${profile.profile_id}`;
+
+  // slug の初期値候補を生成（既存の slug がない場合）
+  const suggestedSlug = profile.slug || generateSuggestedSlug(user);
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8">
@@ -88,62 +86,12 @@ export default async function MyPage({ searchParams }: MyPageProps) {
             )}
           </div>
 
-          {/* 表示名変更フォーム */}
-          <form action={updateDisplayName} className="mb-6">
-            <label
-              htmlFor="display_name"
-              className="mb-2 block text-sm font-medium text-gray-700"
-            >
-              表示名
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                id="display_name"
-                name="display_name"
-                defaultValue={profile.display_name}
-                required
-                maxLength={50}
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-              <button
-                type="submit"
-                className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                保存
-              </button>
-            </div>
-          </form>
-
-          {/* 自己紹介変更フォーム */}
-          <form action={updateBio} className="mb-6">
-            <label
-              htmlFor="bio"
-              className="mb-2 block text-sm font-medium text-gray-700"
-            >
-              自己紹介
-            </label>
-            <textarea
-              id="bio"
-              name="bio"
-              defaultValue={profile.bio ?? ""}
-              maxLength={160}
-              rows={3}
-              placeholder="自己紹介を入力してください（160文字以内）"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <div className="mt-1 flex items-center justify-between">
-              <span className="text-xs text-gray-400">
-                {profile.bio?.length ?? 0} / 160
-              </span>
-              <button
-                type="submit"
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                保存
-              </button>
-            </div>
-          </form>
+          {/* プロフィール編集フォーム */}
+          <ProfileEditForm
+            displayName={profile.display_name}
+            bio={profile.bio}
+            slug={suggestedSlug}
+          />
 
           {/* 外部ログイン連携 */}
           <div className="mb-6">
@@ -153,7 +101,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
           {/* プロフィールページへのリンク */}
           <div className="mb-6">
             <a
-              href={`/p/${profile.profile_id}`}
+              href={profilePath}
               className="block rounded-md border border-gray-300 px-4 py-2 text-center text-gray-700 hover:bg-gray-50"
             >
               公開プロフィールを見る
