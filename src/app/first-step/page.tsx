@@ -14,7 +14,7 @@ export default async function OnboardingPage() {
   if (bypassAuth) {
     // バイパスモード: ダミーデータでレンダリング
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 px-4 py-8">
+      <div className="flex min-h-screen items-center justify-center bg-white px-4 py-8">
         <div className="w-full max-w-lg">
           {/* 開発モード警告バナー */}
           <div className="mb-4 rounded-lg border-2 border-yellow-400 bg-yellow-100 px-4 py-3">
@@ -68,7 +68,7 @@ export default async function OnboardingPage() {
   const suggestedSlug = profile.slug || generateSuggestedSlug(user);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 px-4 py-8">
+    <div className="flex min-h-screen items-center justify-center bg-white px-4 py-8">
       <div className="w-full max-w-lg">
         <OnboardingWizard
           displayName={profile.display_name}
