@@ -1,5 +1,6 @@
 "use client";
 
+import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useActionState, useCallback, useEffect, useState } from "react";
@@ -20,84 +21,7 @@ interface OnboardingWizardProps {
 
 /* ───────────── SVG Icons ───────────── */
 
-function UserIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden="true"
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
-
-function EditIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden="true"
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-    </svg>
-  );
-}
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden="true"
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function LinkIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden="true"
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-    </svg>
-  );
-}
-
 /* ───────────── Step Config ───────────── */
-
-const STEPS = [
-  { label: "ユーザー名設定", Icon: UserIcon },
-  { label: "プロフィール設定", Icon: EditIcon },
-  { label: "設定完了", Icon: LinkIcon },
-] as const;
 
 const STEP_HEADERS = [
   {
@@ -111,6 +35,10 @@ const STEP_HEADERS = [
   {
     title: "カスタムURL設定",
     subtitle: "プロフィールの短縮URLを設定できます",
+  },
+  {
+    title: "設定完了！",
+    subtitle: "プロフィールの準備ができました",
   },
 ] as const;
 
@@ -126,6 +54,7 @@ export function OnboardingWizard({
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [previewMessage, setPreviewMessage] = useState<string | null>(null);
+  const [isCompletingOnboarding, setIsCompletingOnboarding] = useState(false);
 
   /* Server Action states */
   const [displayNameState, displayNameAction, isDisplayNamePending] =
@@ -141,14 +70,56 @@ export function OnboardingWizard({
     FormData
   >(updateSlug, null);
 
-  const handleComplete = useCallback(async () => {
+  const triggerConfetti = useCallback(() => {
+    try {
+      const duration = 1200; // 1.2秒
+      const animationEnd = Date.now() + duration;
+
+      const runAnimation = () => {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ["#3b82f6", "#60a5fa", "#93c5fd"],
+          disableForReducedMotion: true,
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ["#3b82f6", "#60a5fa", "#93c5fd"],
+          disableForReducedMotion: true,
+        });
+
+        if (Date.now() < animationEnd) {
+          requestAnimationFrame(runAnimation);
+        }
+      };
+
+      runAnimation();
+    } catch (error) {
+      // canvas-confetti が失敗しても遷移は継続
+      console.error("Confetti animation failed:", error);
+    }
+  }, []);
+
+  /* Step 4 から マイページへ（即座に遷移） */
+  const handleGoToMyPage = useCallback(async () => {
     if (isBypassMode) {
-      setPreviewMessage(
-        "プレビューモード: 保存は行われません（画面遷移のみ確認できます）",
-      );
+      router.push("/mypage");
       return;
     }
-    await completeOnboarding();
+
+    setIsCompletingOnboarding(true);
+
+    try {
+      await completeOnboarding();
+    } catch (error) {
+      console.error("Failed to complete onboarding:", error);
+    }
+
     router.push("/mypage");
   }, [isBypassMode, router]);
 
@@ -176,8 +147,17 @@ export function OnboardingWizard({
 
   useEffect(() => {
     if (isBypassMode) return;
-    if (slugState?.success && step === 3) handleComplete();
-  }, [isBypassMode, slugState, step, handleComplete]);
+    if (slugState?.success && step === 3) {
+      goToStep(4);
+    }
+  }, [isBypassMode, slugState, step, goToStep]);
+
+  /* Step 4 で紙吹雪を自動開始 */
+  useEffect(() => {
+    if (step === 4 && !isCompletingOnboarding) {
+      triggerConfetti();
+    }
+  }, [step, isCompletingOnboarding, triggerConfetti]);
 
   const header = STEP_HEADERS[step - 1];
 
@@ -426,7 +406,8 @@ export function OnboardingWizard({
                     isBypassMode
                       ? (e) => {
                           e.preventDefault();
-                          void handleComplete();
+                          setPreviewMessage(null);
+                          goToStep(4);
                         }
                       : undefined
                   }
@@ -481,49 +462,115 @@ export function OnboardingWizard({
                       </svg>
                       戻る
                     </button>
-                    <button
-                      type="submit"
-                      disabled={isBypassMode ? false : isSlugPending}
-                      className={primaryBtn}
-                    >
-                      {isSlugPending && !isBypassMode
-                        ? "保存中..."
-                        : "設定完了"}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => goToStep(4)}
+                        disabled={isBypassMode ? false : isSlugPending}
+                        className="cursor-pointer px-3 py-2 text-sm text-gray-400 transition-colors hover:text-gray-600"
+                      >
+                        スキップ
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isBypassMode ? false : isSlugPending}
+                        className={primaryBtn}
+                      >
+                        {isSlugPending && !isBypassMode ? "保存中..." : "完了"}
+                        <svg
+                          aria-hidden="true"
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M13 7l5 5-5 5M6 12h12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              {/* ─── Step 4 : 完了画面 ─── */}
+              {step === 4 && (
+                <div className="text-center">
+                  <div className="mb-6 flex justify-center">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-50">
                       <svg
                         aria-hidden="true"
-                        className="h-4 w-4"
+                        className="h-10 w-10 text-blue-500"
                         fill="none"
                         stroke="currentColor"
-                        strokeWidth={2.5}
+                        strokeWidth={2}
                         viewBox="0 0 24 24"
                       >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          d="M13 7l5 5-5 5M6 12h12"
+                          d="M5 13l4 4L19 7"
                         />
                       </svg>
-                    </button>
+                    </div>
                   </div>
-                </form>
+                  <p className="mb-8 text-gray-600">
+                    プロフィールの設定が完了しました
+                    <br />
+                    マイページで確認できます
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleGoToMyPage}
+                    disabled={isCompletingOnboarding}
+                    className={primaryBtn}
+                  >
+                    マイページへ
+                    <svg
+                      aria-hidden="true"
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M13 7l5 5-5 5M6 12h12"
+                      />
+                    </svg>
+                  </button>
+                </div>
               )}
             </div>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* スキップリンク */}
-      <p className="mt-7 text-center text-[13px] text-gray-400">
-        <button
-          type="button"
-          onClick={handleComplete}
-          className="cursor-pointer text-gray-400 transition-colors hover:text-blue-500"
-        >
-          <span className="font-semibold text-blue-500 hover:text-blue-600">
-            すべてスキップする
-          </span>
-        </button>
-      </p>
+      {/* スキップリンク（Step 4 では非表示） */}
+      {step < 4 && (
+        <p className="mt-7 text-center text-[13px] text-gray-400">
+          <button
+            type="button"
+            onClick={() => {
+              setPreviewMessage(null);
+              goToStep(4);
+            }}
+            disabled={isCompletingOnboarding}
+            className="cursor-pointer text-gray-400 transition-colors hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="font-semibold text-blue-500 hover:text-blue-600">
+              すべてスキップする
+            </span>
+          </button>
+        </p>
+      )}
     </div>
   );
 }
