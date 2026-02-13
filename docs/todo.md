@@ -71,13 +71,30 @@
 - [x] `public_get_profile_by_slug` 関数作成
 - [x] Server Actions: `updateSlug`, `completeOnboarding` 追加
 - [x] Auth Callback: 初回ログイン → `/onboarding` リダイレクト
-- [x] オンボーディングページ作成（3ステップウィザード）
+- [x] オンボーディングページ作成（4ステップウィザード）
   - Step 1: ユーザー名確認
   - Step 2: 自己紹介入力（スキップ可）
   - Step 3: カスタムURL設定（スキップ可）
+  - Step 4: 完了画面（紙吹雪演出）
+- [x] 完了演出: `canvas-confetti` による紙吹雪エフェクト（1.2秒）
 - [x] MyPage: オンボーディング未完了ガード追加
 - [x] 公開プロフィール: slug 解決（`/p/@slug` 対応）
 - [x] MyPage 編集フォーム: slug 編集セクション追加
+
+## 9. プロフィール共有機能
+
+設計書: `docs/plans/2026-02-13-profile-share-design.md`
+
+- [ ] `qrcode.react` パッケージをインストール
+- [ ] `share-section.tsx` Client Component を作成
+  - QRコード表示ボタン（メイン、大きいボタン）
+  - URLコピーリンク（補助、控えめなテキストリンク）
+  - QRモーダル（フルスクリーン、QRコード + URL表示 + URLコピー + Web Share API）
+- [ ] `mypage/page.tsx` を更新
+  - プロフィールURL構築（origin + path）
+  - ShareSection コンポーネントの配置（「公開プロフィールを見る」の上）
+- [ ] Biome lint チェック通過
+- [ ] 動作確認（QR表示、URLコピー、Web Share）
 
 ---
 
