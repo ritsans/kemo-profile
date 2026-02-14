@@ -4,60 +4,6 @@
 
 ---
 
-## 1. Supabase環境設定
-
-- [x] Supabaseクライアント初期化用のユーティリティを作成（`lib/supabase/client.ts`, `lib/supabase/server.ts`）
-- [x] 環境変数の設定（`.env.local`に`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`）
-- [x] Supabase Middlewareの設定（認証セッション管理用）
-
-## 2. 認証プロバイダー設定（Supabase Dashboard）
-
-- [ ] Google OAuth プロバイダーの有効化と設定
-- [ ] X (Twitter) OAuth プロバイダーの有効化と設定
-- [ ] コールバックURLの設定（`/auth/callback`）
-
-## 3. データベーススキーマ
-
-- [x] `profiles` テーブルの作成
-  - `profile_id` (TEXT, PK): base62、15文字のランダムID
-  - `owner_user_id` (UUID, FK → auth.users): プロフィール所有者
-  - `display_name` (TEXT, NOT NULL): ハンドルネーム
-  - `avatar_url` (TEXT): アバター画像URL
-  - `x_username` (TEXT): X (Twitter) ユーザー名（任意）
-  - `created_at` (TIMESTAMPTZ)
-  - `updated_at` (TIMESTAMPTZ)
-- [x] `profiles` テーブルのRLSポリシー設定
-  - 全ユーザー: SELECT（公開プロフィールの閲覧）
-  - 所有者のみ: UPDATE（自分のプロフィールの編集）
-- [x] `owner_user_id` へのユニークインデックス（1ユーザー1プロフィール）
-- [x] マイグレーション適用（Supabase MCP経由で完了）
-- [x] TypeScript型定義生成（`lib/supabase/database.types.ts`）
-
-## 4. ユーティリティ関数
-
-- [x] `generateProfileId()`: 暗号学的に安全なbase62ランダムID生成関数（15文字）
-  - `crypto.getRandomValues()` を使用（`Math.random()` 不可）
-  - 文字セット: `0-9`, `a-z`, `A-Z`（62文字）
-
-## 5. 認証UI・フロー
-
-- [x] ログインページ (`/login`) の作成
-  - Google OAuth ログインボタン
-  - X OAuth ログインボタン
-- [x] 認証コールバック処理 (`/auth/callback/route.ts`)
-  - 認証コード交換
-  - セッション確立
-- [x] ログアウト機能
-
-## 6. 初回ログイン時のプロフィール自動作成
-
-- [x] 初回ログイン検出ロジック（`profiles` テーブルに該当レコードがあるか確認）
-- [x] OAuthメタデータの取得
-  - X OAuth: `user_name`, `name`, `profile_image_url` → `x_username`, `display_name`, `avatar_url`
-  - Google OAuth: `name`, `picture` → `display_name`, `avatar_url`（`x_username` は null）
-- [x] `profiles` テーブルへの自動INSERT
-- [x] プロフィール作成後 `/p/{profile_id}` へリダイレクト
-
 ## 7. マイページアクセス
 
 - [x] マイページルート (`/my`) の作成
@@ -90,11 +36,79 @@
   - QRコード表示ボタン（メイン、大きいボタン）
   - URLコピーリンク（補助、控えめなテキストリンク）
   - QRモーダル（フルスクリーン、QRコード + URL表示 + URLコピー + Web Share API）
+  - QRコード画像はQRCodeSVGで生成
 - [ ] `mypage/page.tsx` を更新
   - プロフィールURL構築（origin + path）
   - ShareSection コンポーネントの配置（「公開プロフィールを見る」の上）
 - [ ] Biome lint チェック通過
 - [ ] 動作確認（QR表示、URLコピー、Web Share）
+
+## 10. マイページ情報表示・編集インターフェース
+
+設計書: `docs/plans/2026-02-14-mypage-edit-interface-design.md`
+
+### 10.1 Server Action: `updateProfile`（一括保存）
+
+- [ ] x_username 正規化ユーティリティ関数の作成（`lib/utils/x-username.ts`）
+  - `@username` → `username`（@を削除）
+  - `https://x.com/username` → `username`（URLから抽出）
+  - `https://twitter.com/username` → `username`（URLから抽出）
+  - 不正な入力にはエラーを返す
+- [ ] `updateProfile` Server Action の作成（`app/actions/profile.ts`）
+  - FormData から全項目を取得（display_name, bio, x_username, slug）
+  - サーバー側で全項目をバリデーション
+  - x_username の正規化処理を適用
+  - 1回の Supabase update で全項目を更新
+  - slug 変更時は `revalidatePath("/p/[profile_id]", "page")` でキャッシュリフレッシュ
+  - エラーは項目ごとにまとめて返す
+
+### 10.2 マイページ表示モードの実装
+
+- [ ] `mypage/page.tsx` を更新
+  - 公開プロフィールと同じビジュアルに変更（アバター120x120、表示名、bio、Xリンクボタン）
+  - x_username を DB から取得するよう select を更新
+  - ページ右上に「編集」ボタンを配置
+  - OAuth連携カード・公開プロフィールリンク・ログアウトボタンはカード外に配置
+
+### 10.3 マイページ編集モードの実装
+
+- [ ] `mypage/profile-edit-form.tsx` を編集モード対応にリファクタリング
+  - 表示モード ⇔ 編集モードの切り替え state 管理
+  - 編集モード時のフォームレイアウト（縦並び）
+    - アバター表示（編集不可）+「※アバター変更は今後対応予定」テキスト
+    - display_name 入力（必須、最大50文字）
+    - bio テキストエリア（任意、最大160文字、文字カウンター）
+    - x_username 入力（任意、プレースホルダー：「username または https://x.com/username」）
+    - slug 入力（任意、3〜20文字、説明テキスト付き）
+  - 下部に「保存する」ボタン（青色）+「キャンセル」ボタン（グレー）
+  - `useActionState` で `updateProfile` Server Action を呼び出し
+  - 保存成功時：表示モードに切り替え + トースト通知（2秒間）
+  - エラー時：該当フォーム直下に赤文字でエラーメッセージ表示
+
+### 10.4 未保存変更の保護
+
+- [ ] Dirty state tracking の実装
+  - 初期値と現在値を比較して変更を検知
+- [ ] キャンセルボタン押下時の保護
+  - 変更がある場合：`window.confirm()` で確認ダイアログ表示
+  - 変更がない場合：確認なしで表示モードに戻る
+- [ ] ブラウザの戻る・ページ遷移時の保護
+  - `beforeunload` イベントで dirty state がある場合にブラウザ標準ダイアログを表示
+
+### 10.5 既存コードの修正
+
+- [ ] `updateSlug` Server Action のキャッシュリフレッシュ修正
+  - `revalidatePath("/p/[profile_id]", "page")` を追加
+
+### 10.6 検証
+
+- [ ] Biome lint チェック通過
+- [ ] 動作確認
+  - 表示モード：公開プロフィールと同じビジュアルで情報が表示される
+  - 編集モード：全項目の編集・一括保存ができる
+  - x_username：柔軟な入力形式が正規化される
+  - 未保存変更の保護：キャンセル・ブラウザバック時に確認ダイアログが出る
+  - slug 変更時：公開プロフィールのキャッシュがリフレッシュされる
 
 ---
 
