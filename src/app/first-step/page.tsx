@@ -1,7 +1,25 @@
+import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { generateSuggestedSlug } from "@/lib/utils/slug";
-import { OnboardingWizard } from "./onboarding-wizard";
+
+// 重いライブラリ（canvas-confetti, framer-motion）を含むため動的インポート
+const OnboardingWizard = dynamic(
+  () =>
+    import("./onboarding-wizard").then((mod) => ({
+      default: mod.OnboardingWizard,
+    })),
+  {
+    loading: () => (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-r-transparent" />
+          <p className="text-sm text-gray-500">読み込み中...</p>
+        </div>
+      </div>
+    ),
+  },
+);
 
 /**
  * オンボーディングページ（Server Component）

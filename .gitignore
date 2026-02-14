@@ -40,7 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Claude and Agents settings
 .claude/*
+.agents/*
 
 # 長文プロンプト用
 prompt.txt

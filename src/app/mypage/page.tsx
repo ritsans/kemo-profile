@@ -29,7 +29,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
     redirect("/login");
   }
 
-  // profileテーブルから自分のプロフィールを取得
+  // profileテーブルから自分のプロフィールを取得（user.id に依存するため直列実行）
   const { data: profile } = await supabase
     .from("profiles")
     .select(

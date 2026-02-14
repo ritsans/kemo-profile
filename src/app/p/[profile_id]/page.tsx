@@ -28,25 +28,32 @@ export default async function ProfilePage({ params }: PageProps) {
   // profile_id（15文字の base62）か slug かを形式で判別
   const isProfileId = /^[a-zA-Z0-9]{15}$/.test(profile_id);
 
-  let profile: ProfileData;
-  if (isProfileId) {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("profile_id, display_name, avatar_url, bio, x_username, slug")
-      .eq("profile_id", profile_id)
-      .single();
-    if (error || !data) {
-      notFound();
-    }
-    profile = data;
-  } else {
-    const { data, error } = await supabase.rpc("public_get_profile_by_slug", {
-      p_slug: profile_id,
-    });
-    if (error || !data || data.length === 0) {
-      notFound();
-    }
-    profile = data[0];
+  // Promise を先に開始（await を遅延させてウォーターフォールを回避）
+  const profilePromise = isProfileId
+    ? supabase
+        .from("profiles")
+        .select("profile_id, display_name, avatar_url, bio, x_username, slug")
+        .eq("profile_id", profile_id)
+        .single()
+    : supabase.rpc("public_get_profile_by_slug", {
+        p_slug: profile_id,
+      });
+
+  // ここで await（Promise はすでに開始している）
+  const { data, error } = await profilePromise;
+
+  if (error || !data) {
+    notFound();
+  }
+
+  // RPC の場合は配列の最初の要素、direct query の場合はそのまま
+  const profile: ProfileData = isProfileId
+    ? (data as ProfileData)
+    : (data as ProfileData[])[0];
+
+  // slug 経由で空配列の場合も notFound
+  if (!isProfileId && (!Array.isArray(data) || data.length === 0)) {
+    notFound();
   }
 
   return (
