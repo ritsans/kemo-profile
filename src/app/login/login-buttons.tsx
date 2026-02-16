@@ -2,6 +2,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import { useState } from "react";
+import { env } from "@/lib/env.client";
 import type { Database } from "@/lib/supabase/database.types";
 import { EmailLoginForm } from "./email-login-form";
 
@@ -19,8 +20,8 @@ export function LoginButtons() {
   }>({ google: false, twitter: false });
 
   const supabase = createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env("NEXT_PUBLIC_SUPABASE_URL"),
+    env("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
   );
 
   // Googleアカウントでのログイン処理

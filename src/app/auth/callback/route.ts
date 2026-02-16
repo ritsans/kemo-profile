@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { env } from "@/lib/env.server";
 import { isUniqueViolation } from "@/lib/errors/supabase";
 import { generateProfileId } from "@/lib/id";
 import {
@@ -50,8 +51,8 @@ export async function GET(request: NextRequest) {
 
   // Route Handler用のSupabaseクライアント作成
   const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env("NEXT_PUBLIC_SUPABASE_URL"),
+    env("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
     {
       cookies: {
         getAll() {
