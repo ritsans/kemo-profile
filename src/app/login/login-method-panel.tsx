@@ -1,27 +1,31 @@
 "use client";
 
 import { createBrowserClient } from "@supabase/ssr";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { env } from "@/lib/env.client";
 import type { Database } from "@/lib/supabase/database.types";
 import { EmailLoginForm } from "./email-login-form";
 
 /**
- * OAuth ログインボタン (Client Component)
- * Google と X (Twitter) の SSO ログインボタンを表示
+ * ログイン手段パネル (Client Component)
+ * Google / X (Twitter) OAuth とメールログインフォームを表示
  */
 
 // supabase クライアントの作成と初期化
-export function LoginButtons() {
+export function LoginMethodPanel() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<{
     google: boolean;
     twitter: boolean;
   }>({ google: false, twitter: false });
 
-  const supabase = createBrowserClient<Database>(
-    env("NEXT_PUBLIC_SUPABASE_URL"),
-    env("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+  const supabase = useMemo(
+    () =>
+      createBrowserClient<Database>(
+        env("NEXT_PUBLIC_SUPABASE_URL"),
+        env("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+      ),
+    [],
   );
 
   // Googleアカウントでのログイン処理
