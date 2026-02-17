@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getOAuthErrorMessage } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { LoginMethodPanel } from "./login-method-panel";
+import { LoginMethodPanel } from "./login-method";
 
 /**
  * ログインページ
