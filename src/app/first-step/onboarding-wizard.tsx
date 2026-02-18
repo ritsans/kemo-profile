@@ -53,7 +53,6 @@ export function OnboardingWizard({
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState<1 | -1>(1);
-  const [previewMessage, setPreviewMessage] = useState<string | null>(null);
   const [isCompletingOnboarding, setIsCompletingOnboarding] = useState(false);
 
   /* Server Action states */
@@ -221,13 +220,6 @@ export function OnboardingWizard({
                 </p>
               </div>
 
-              {/* プレビューバナー */}
-              {previewMessage && (
-                <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-700">
-                  {previewMessage}
-                </div>
-              )}
-
               {/* ─── Step 1 : 表示名 ─── */}
               {step === 1 && (
                 <form
@@ -236,7 +228,6 @@ export function OnboardingWizard({
                     isBypassMode
                       ? (e) => {
                           e.preventDefault();
-                          setPreviewMessage(null);
                           goToStep(2);
                         }
                       : undefined
@@ -307,7 +298,6 @@ export function OnboardingWizard({
                     isBypassMode
                       ? (e) => {
                           e.preventDefault();
-                          setPreviewMessage(null);
                           goToStep(3);
                         }
                       : undefined
@@ -406,7 +396,6 @@ export function OnboardingWizard({
                     isBypassMode
                       ? (e) => {
                           e.preventDefault();
-                          setPreviewMessage(null);
                           goToStep(4);
                         }
                       : undefined
@@ -559,7 +548,6 @@ export function OnboardingWizard({
           <button
             type="button"
             onClick={() => {
-              setPreviewMessage(null);
               goToStep(4);
             }}
             disabled={isCompletingOnboarding}

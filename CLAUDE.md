@@ -89,19 +89,25 @@ Do not perform linter behavior. Delegate all linting to biome.
 
 ### Environment Variables
 
-**IMPORTANT**: Always use the `env()` helper function from `@/lib/env` to access environment variables.
+**IMPORTANT**: Always use the `env()` helper function to access environment variables.
 
-- **DO NOT use** `process.env.XXX!` (non-null assertion operator) - violates Biome's `noNonNullAssertion` rule
-- **DO use** `env("XXX")` from `@/lib/env`
+- **Server 用**: `import { env } from "@/lib/env.server"`
+- **Client 用**: `import { env } from "@/lib/env.client"`
 
 ```typescript
-// ❌ BAD - Biome lint error
+// ❌ BAD - Biome lint warning
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
-// ✅ GOOD
-import { env } from "@/lib/env";
+// ✅ GOOD (Server Component / Action / Route Handler)
+import { env } from "@/lib/env.server";
+const url = env("NEXT_PUBLIC_SUPABASE_URL");
+
+// ✅ GOOD (Client Component)
+import { env } from "@/lib/env.client";
 const url = env("NEXT_PUBLIC_SUPABASE_URL");
 ```
+
+**例外**: `NODE_ENV` や `BYPASS_*` など、比較のみで使用する場合（`process.env.XXX === "value"`）は `env()` 不要。
 
 The `env()` helper throws an error at runtime if the variable is undefined, providing better error messages than silent undefined access.
 

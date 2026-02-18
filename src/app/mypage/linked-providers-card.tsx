@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { getLinkIdentityErrorMessage } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/client";
 
@@ -107,7 +107,7 @@ export function LinkedProvidersCard({ identities }: LinkedProvidersCardProps) {
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   // プロバイダーが連携済みかチェック
   const isLinked = (provider: string): boolean => {

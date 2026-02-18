@@ -28,6 +28,11 @@ export default async function ProfilePage({ params }: PageProps) {
   // profile_id（15文字の base62）か slug かを形式で判別
   const isProfileId = /^[a-zA-Z0-9]{15}$/.test(profile_id);
 
+  // slug の場合、URL の @ プレフィックスを除去（/p/@myslug → myslug）
+  const slugValue = profile_id.startsWith("@")
+    ? profile_id.slice(1)
+    : profile_id;
+
   // Promise を先に開始（await を遅延させてウォーターフォールを回避）
   const profilePromise = isProfileId
     ? supabase
@@ -36,7 +41,7 @@ export default async function ProfilePage({ params }: PageProps) {
         .eq("profile_id", profile_id)
         .single()
     : supabase.rpc("public_get_profile_by_slug", {
-        p_slug: profile_id,
+        p_slug: slugValue,
       });
 
   // ここで await（Promise はすでに開始している）

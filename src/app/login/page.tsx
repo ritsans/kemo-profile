@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getOAuthErrorMessage } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { LoginButtons } from "./login-buttons";
+import { LoginMethodPanel } from "./login-method";
 
 /**
  * ログインページ
@@ -47,7 +47,7 @@ export default async function LoginPage({
               {errorMessage}
             </div>
           )}
-          <LoginButtons />
+          <LoginMethodPanel />
         </div>
       </div>
     </div>

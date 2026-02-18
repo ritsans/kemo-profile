@@ -9,9 +9,15 @@ export async function sendMagicLink(
   _prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const email = formData.get("email") as string;
+  const email = formData.get("email");
 
-  if (!email || !email.includes("@")) {
+  if (!email || typeof email !== "string") {
+    return { success: false, error: "有効なメールアドレスを入力してください" };
+  }
+
+  const trimmedEmail = email.trim();
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
     return { success: false, error: "有効なメールアドレスを入力してください" };
   }
 
@@ -19,7 +25,7 @@ export async function sendMagicLink(
   const origin = getTrustedAppOrigin();
 
   const { error } = await supabase.auth.signInWithOtp({
-    email,
+    email: trimmedEmail,
     options: {
       emailRedirectTo: `${origin}/auth/callback`,
     },

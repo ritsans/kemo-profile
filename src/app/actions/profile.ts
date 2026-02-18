@@ -6,6 +6,68 @@ import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types/action";
 
 const SLUG_REGEX = /^[a-z][a-z0-9_]{2,19}$/;
+const UPDATE_ERROR_MESSAGE = "更新に失敗しました。もう一度お試しください";
+
+type AuthContext =
+  | {
+      ok: true;
+      supabase: Awaited<ReturnType<typeof createClient>>;
+      userId: string;
+    }
+  | {
+      ok: false;
+      result: ActionResult;
+    };
+
+async function requireUser(): Promise<AuthContext> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      result: { success: false, error: "ログインが必要です" },
+    };
+  }
+
+  return { ok: true, supabase, userId: user.id };
+}
+
+async function updateProfileAndRevalidate(
+  update: {
+    display_name?: string;
+    bio?: string | null;
+    slug?: string | null;
+    onboarding_completed?: boolean;
+  },
+  logLabel: string,
+  options?: {
+    uniqueErrorMessage?: string;
+  },
+): Promise<ActionResult> {
+  const auth = await requireUser();
+  if (!auth.ok) {
+    return auth.result;
+  }
+
+  const { error } = await auth.supabase
+    .from("profiles")
+    .update(update)
+    .eq("owner_user_id", auth.userId);
+
+  if (error) {
+    console.error(logLabel, error);
+    if (options?.uniqueErrorMessage && isUniqueViolation(error)) {
+      return { success: false, error: options.uniqueErrorMessage };
+    }
+    return { success: false, error: UPDATE_ERROR_MESSAGE };
+  }
+
+  revalidatePath("/mypage");
+  return { success: true, data: undefined };
+}
 
 /**
  * プロフィール更新 Server Action
@@ -30,34 +92,11 @@ export async function updateDisplayName(
     return { success: false, error: "表示名は50文字以内で入力してください" };
   }
 
-  const supabase = await createClient();
-
-  // 認証チェック
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, error: "ログインが必要です" };
-  }
-
-  // プロフィール更新
-  const { error } = await supabase
-    .from("profiles")
-    .update({ display_name: trimmedName })
-    .eq("owner_user_id", user.id);
-
-  if (error) {
-    console.error("Profile update error:", error);
-    return {
-      success: false,
-      error: "更新に失敗しました。もう一度お試しください",
-    };
-  }
-
-  // キャッシュをリフレッシュ
-  revalidatePath("/mypage");
-  return { success: true, data: undefined };
+  const result = await updateProfileAndRevalidate(
+    { display_name: trimmedName },
+    "Profile update error:",
+  );
+  return result;
 }
 
 /**
@@ -80,34 +119,11 @@ export async function updateBio(
     return { success: false, error: "自己紹介は160文字以内で入力してください" };
   }
 
-  const supabase = await createClient();
-
-  // 認証チェック
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, error: "ログインが必要です" };
-  }
-
-  // プロフィール更新（空文字は null として保存）
-  const { error } = await supabase
-    .from("profiles")
-    .update({ bio: trimmedBio.length > 0 ? trimmedBio : null })
-    .eq("owner_user_id", user.id);
-
-  if (error) {
-    console.error("Bio update error:", error);
-    return {
-      success: false,
-      error: "更新に失敗しました。もう一度お試しください",
-    };
-  }
-
-  // キャッシュをリフレッシュ
-  revalidatePath("/mypage");
-  return { success: true, data: undefined };
+  const result = await updateProfileAndRevalidate(
+    { bio: trimmedBio.length > 0 ? trimmedBio : null },
+    "Bio update error:",
+  );
+  return result;
 }
 
 /**
@@ -129,26 +145,11 @@ export async function updateSlug(
 
   // 空文字の場合は slug を null にクリア
   if (trimmedSlug.length === 0) {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: "ログインが必要です" };
-    }
-    const { error } = await supabase
-      .from("profiles")
-      .update({ slug: null })
-      .eq("owner_user_id", user.id);
-    if (error) {
-      console.error("Slug clear error:", error);
-      return {
-        success: false,
-        error: "更新に失敗しました。もう一度お試しください",
-      };
-    }
-    revalidatePath("/mypage");
-    return { success: true, data: undefined };
+    const result = await updateProfileAndRevalidate(
+      { slug: null },
+      "Slug clear error:",
+    );
+    return result;
   }
 
   // 形式チェック
@@ -160,63 +161,21 @@ export async function updateSlug(
     };
   }
 
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, error: "ログインが必要です" };
-  }
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ slug: trimmedSlug })
-    .eq("owner_user_id", user.id);
-
-  if (error) {
-    if (isUniqueViolation(error)) {
-      return { success: false, error: "このURLは既に使用されています" };
-    }
-    console.error("Slug update error:", error);
-    return {
-      success: false,
-      error: "更新に失敗しました。もう一度お試しください",
-    };
-  }
-
-  revalidatePath("/mypage");
-  return { success: true, data: undefined };
+  const result = await updateProfileAndRevalidate(
+    { slug: trimmedSlug },
+    "Slug update error:",
+    { uniqueErrorMessage: "このURLは既に使用されています" },
+  );
+  return result;
 }
 
 /**
  * オンボーディング完了フラグを設定
  */
 export async function completeOnboarding(): Promise<ActionResult> {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, error: "ログインが必要です" };
-  }
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ onboarding_completed: true })
-    .eq("owner_user_id", user.id);
-
-  if (error) {
-    console.error("Complete onboarding error:", error);
-    return {
-      success: false,
-      error: "更新に失敗しました。もう一度お試しください",
-    };
-  }
-
-  revalidatePath("/mypage");
-  return { success: true, data: undefined };
+  const result = await updateProfileAndRevalidate(
+    { onboarding_completed: true },
+    "Complete onboarding error:",
+  );
+  return result;
 }
