@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { logout } from "@/app/actions/auth";
@@ -6,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { generateSuggestedSlug } from "@/lib/utils/slug";
 import { LinkedProvidersCard } from "./linked-providers-card";
 import { ProfileEditForm } from "./profile-edit-form";
+import { ShareSection } from "./share-section";
 
 interface MyPageProps {
   searchParams: Promise<{ error?: string; error_description?: string }>;
@@ -49,8 +51,17 @@ export default async function MyPage({ searchParams }: MyPageProps) {
   }
 
   const profilePath = profile.slug
-    ? `/p/${profile.slug}`
+    ? `/p/@${profile.slug}`
     : `/p/${profile.profile_id}`;
+
+  // origin を構築してプロフィールの絶対URLを生成
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "localhost:3000";
+  const protocol = host.includes("localhost") ? "http" : "https";
+  const origin = `${protocol}://${host}`;
+  const profileUrl = profile.slug
+    ? `${origin}/p/@${profile.slug}`
+    : `${origin}/p/${profile.profile_id}`;
 
   // slug の初期値候補を生成（既存の slug がない場合）
   const suggestedSlug = profile.slug || generateSuggestedSlug(user);
@@ -96,6 +107,11 @@ export default async function MyPage({ searchParams }: MyPageProps) {
           {/* 外部ログイン連携 */}
           <div className="mb-6">
             <LinkedProvidersCard identities={user.identities} />
+          </div>
+
+          {/* プロフィール共有 */}
+          <div className="mb-6">
+            <ShareSection profileUrl={profileUrl} />
           </div>
 
           {/* プロフィールページへのリンク */}

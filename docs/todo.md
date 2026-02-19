@@ -15,16 +15,16 @@ Implementation tasks for authentication and My Page access based on `docs/spec.m
 
 Design doc: `docs/plans/2026-02-13-profile-share-design.md`
 
-- [ ] Install `qrcode.react` package
-- [ ] Create `share-section.tsx` Client Component
+- [x] Install `qrcode.react` package
+- [x] Create `share-section.tsx` Client Component
   - QR code display button (main, large button)
   - URL copy link (secondary, subtle text link)
   - QR modal (fullscreen: QR code + URL display + URL copy + Web Share API)
   - QR code image generated with QRCodeSVG
-- [ ] Update `mypage/page.tsx`
+- [x] Update `mypage/page.tsx`
   - Build profile URL (origin + path)
   - Place ShareSection component (above "View public profile" link)
-- [ ] Pass Biome lint check
+- [x] Pass Biome lint check
 - [ ] Verify behavior (QR display, URL copy, Web Share)
 
 ## 10. My Page Info Display & Edit Interface
