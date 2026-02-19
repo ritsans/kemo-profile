@@ -140,7 +140,9 @@ The `env()` helper throws an error at runtime if the variable is undefined, prov
 
 - Server: fetch + server-only logic. Mutations must go through Server Actions or Route Handlers.
 - Client: UI interaction only; keep logic thin.
-- Routes/Actions flow: validation → auth → processing → response. If complex, move logic to `lib/services/*`.
+- Routes/Actions flow: validation → auth → processing → response. If complex:
+  - Route-local logic: extract to a `_lib/` directory co-located with the route (e.g., `app/auth/callback/_lib/`)
+  - Shared logic reused across routes/actions: move to `lib/services/*`
 
 ##### Pragmatics
 
