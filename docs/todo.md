@@ -1,120 +1,104 @@
-# TODO: 認証・ユーザー登録 MVP
+# TODO: Auth & User Registration MVP
 
-`docs/spec.md` に基づく、認証機能とマイページアクセスの実装タスク。
-
----
-
-## 7. マイページアクセス
-
-- [x] マイページルート (`/my`) の作成
-  - 認証ガード: 未ログインの場合は `/login` へリダイレクト
-  - ログイン済みの場合は自分の `/p/{profile_id}` へリダイレクト
-- [ ] ヘッダー/ナビゲーションにマイページリンクを追加（認証状態に応じて表示切替）
-
-## 8. オンボーディング
-
-- [x] DBマイグレーション: `slug` カラム + `onboarding_completed` フラグ追加
-- [x] `public_get_profile_by_slug` 関数作成
-- [x] Server Actions: `updateSlug`, `completeOnboarding` 追加
-- [x] Auth Callback: 初回ログイン → `/onboarding` リダイレクト
-- [x] オンボーディングページ作成（4ステップウィザード）
-  - Step 1: ユーザー名確認
-  - Step 2: 自己紹介入力（スキップ可）
-  - Step 3: カスタムURL設定（スキップ可）
-  - Step 4: 完了画面（紙吹雪演出）
-- [x] 完了演出: `canvas-confetti` による紙吹雪エフェクト（1.2秒）
-- [x] MyPage: オンボーディング未完了ガード追加
-- [x] 公開プロフィール: slug 解決（`/p/@slug` 対応）
-- [x] MyPage 編集フォーム: slug 編集セクション追加
-
-## 9. プロフィール共有機能
-
-設計書: `docs/plans/2026-02-13-profile-share-design.md`
-
-- [ ] `qrcode.react` パッケージをインストール
-- [ ] `share-section.tsx` Client Component を作成
-  - QRコード表示ボタン（メイン、大きいボタン）
-  - URLコピーリンク（補助、控えめなテキストリンク）
-  - QRモーダル（フルスクリーン、QRコード + URL表示 + URLコピー + Web Share API）
-  - QRコード画像はQRCodeSVGで生成
-- [ ] `mypage/page.tsx` を更新
-  - プロフィールURL構築（origin + path）
-  - ShareSection コンポーネントの配置（「公開プロフィールを見る」の上）
-- [ ] Biome lint チェック通過
-- [ ] 動作確認（QR表示、URLコピー、Web Share）
-
-## 10. マイページ情報表示・編集インターフェース
-
-設計書: `docs/plans/2026-02-14-mypage-edit-interface-design.md`
-
-### 10.1 Server Action: `updateProfile`（一括保存）
-
-- [ ] x_username 正規化ユーティリティ関数の作成（`lib/utils/x-username.ts`）
-  - `@username` → `username`（@を削除）
-  - `https://x.com/username` → `username`（URLから抽出）
-  - `https://twitter.com/username` → `username`（URLから抽出）
-  - 不正な入力にはエラーを返す
-- [ ] `updateProfile` Server Action の作成（`app/actions/profile.ts`）
-  - FormData から全項目を取得（display_name, bio, x_username, slug）
-  - サーバー側で全項目をバリデーション
-  - x_username の正規化処理を適用
-  - 1回の Supabase update で全項目を更新
-  - slug 変更時は `revalidatePath("/p/[profile_id]", "page")` でキャッシュリフレッシュ
-  - エラーは項目ごとにまとめて返す
-
-### 10.2 マイページ表示モードの実装
-
-- [ ] `mypage/page.tsx` を更新
-  - 公開プロフィールと同じビジュアルに変更（アバター120x120、表示名、bio、Xリンクボタン）
-  - x_username を DB から取得するよう select を更新
-  - ページ右上に「編集」ボタンを配置
-  - OAuth連携カード・公開プロフィールリンク・ログアウトボタンはカード外に配置
-
-### 10.3 マイページ編集モードの実装
-
-- [ ] `mypage/profile-edit-form.tsx` を編集モード対応にリファクタリング
-  - 表示モード ⇔ 編集モードの切り替え state 管理
-  - 編集モード時のフォームレイアウト（縦並び）
-    - アバター表示（編集不可）+「※アバター変更は今後対応予定」テキスト
-    - display_name 入力（必須、最大50文字）
-    - bio テキストエリア（任意、最大160文字、文字カウンター）
-    - x_username 入力（任意、プレースホルダー：「username または https://x.com/username」）
-    - slug 入力（任意、3〜20文字、説明テキスト付き）
-  - 下部に「保存する」ボタン（青色）+「キャンセル」ボタン（グレー）
-  - `useActionState` で `updateProfile` Server Action を呼び出し
-  - 保存成功時：表示モードに切り替え + トースト通知（2秒間）
-  - エラー時：該当フォーム直下に赤文字でエラーメッセージ表示
-
-### 10.4 未保存変更の保護
-
-- [ ] Dirty state tracking の実装
-  - 初期値と現在値を比較して変更を検知
-- [ ] キャンセルボタン押下時の保護
-  - 変更がある場合：`window.confirm()` で確認ダイアログ表示
-  - 変更がない場合：確認なしで表示モードに戻る
-- [ ] ブラウザの戻る・ページ遷移時の保護
-  - `beforeunload` イベントで dirty state がある場合にブラウザ標準ダイアログを表示
-
-### 10.5 既存コードの修正
-
-- [ ] `updateSlug` Server Action のキャッシュリフレッシュ修正
-  - `revalidatePath("/p/[profile_id]", "page")` を追加
-
-### 10.6 検証
-
-- [ ] Biome lint チェック通過
-- [ ] 動作確認
-  - 表示モード：公開プロフィールと同じビジュアルで情報が表示される
-  - 編集モード：全項目の編集・一括保存ができる
-  - x_username：柔軟な入力形式が正規化される
-  - 未保存変更の保護：キャンセル・ブラウザバック時に確認ダイアログが出る
-  - slug 変更時：公開プロフィールのキャッシュがリフレッシュされる
+Implementation tasks for authentication and My Page access based on `docs/spec.md`.
 
 ---
 
-## 完了条件
+## 7. My Page Access
 
-- [ ] ユーザーがGoogle/X OAuthでログインできる
-- [ ] 初回ログイン時にプロフィールが自動作成される
-- [ ] ログイン済みユーザーがマイページ (`/my`) から自分のプロフィールにアクセスできる
-- [ ] 未ログインユーザーがマイページにアクセスすると `/login` にリダイレクトされる
+- [x] Create My Page route (`/my`)
+  - Auth guard: redirect to `/login` if not logged in
+  - Redirect to own `/p/{profile_id}` if logged in
+- [ ] Add My Page link to header/navigation (toggle based on auth state)
+
+## 9. Profile Share Feature
+
+Design doc: `docs/plans/2026-02-13-profile-share-design.md`
+
+- [ ] Install `qrcode.react` package
+- [ ] Create `share-section.tsx` Client Component
+  - QR code display button (main, large button)
+  - URL copy link (secondary, subtle text link)
+  - QR modal (fullscreen: QR code + URL display + URL copy + Web Share API)
+  - QR code image generated with QRCodeSVG
+- [ ] Update `mypage/page.tsx`
+  - Build profile URL (origin + path)
+  - Place ShareSection component (above "View public profile" link)
+- [ ] Pass Biome lint check
+- [ ] Verify behavior (QR display, URL copy, Web Share)
+
+## 10. My Page Info Display & Edit Interface
+
+Design doc: `docs/plans/2026-02-14-mypage-edit-interface-design.md`
+
+### 10.1 Server Action: `updateProfile` (bulk save)
+
+- [ ] Create x_username normalization utility (`lib/utils/x-username.ts`)
+  - `@username` → `username` (strip @)
+  - `https://x.com/username` → `username` (extract from URL)
+  - `https://twitter.com/username` → `username` (extract from URL)
+  - Return error for invalid input
+- [ ] Create `updateProfile` Server Action (`app/actions/profile.ts`)
+  - Extract all fields from FormData (display_name, bio, x_username, slug)
+  - Validate all fields server-side
+  - Apply x_username normalization
+  - Update all fields in a single Supabase update call
+  - On slug change: call `revalidatePath("/p/[profile_id]", "page")` to refresh cache
+  - Return per-field errors in aggregate
+
+### 10.2 My Page Display Mode
+
+- [ ] Update `mypage/page.tsx`
+  - Change to same visual as public profile (avatar 120x120, display name, bio, X link button)
+  - Update select to fetch x_username from DB
+  - Place "Edit" button at top-right of page
+  - Place OAuth card, public profile link, and logout button outside the card
+
+### 10.3 My Page Edit Mode
+
+- [ ] Refactor `mypage/profile-edit-form.tsx` to support edit mode
+  - State management for display ⇔ edit mode toggle
+  - Edit mode form layout (vertical stack)
+    - Avatar display (read-only) + "Avatar editing coming soon" note
+    - display_name input (required, max 50 chars)
+    - bio textarea (optional, max 160 chars, character counter)
+    - x_username input (optional, placeholder: "username or https://x.com/username")
+    - slug input (optional, 3–20 chars, with description text)
+  - Bottom: "Save" button (blue) + "Cancel" button (gray)
+  - Call `updateProfile` Server Action via `useActionState`
+  - On save success: switch to display mode + toast notification (2 seconds)
+  - On error: show red error message directly below the relevant field
+
+### 10.4 Unsaved Changes Protection
+
+- [ ] Implement dirty state tracking
+  - Detect changes by comparing initial values with current values
+- [ ] Protect Cancel button press
+  - If dirty: show `window.confirm()` dialog
+  - If clean: return to display mode without confirmation
+- [ ] Protect browser back / page navigation
+  - Show browser-native dialog via `beforeunload` event when dirty
+
+### 10.5 Existing Code Fixes
+
+- [ ] Fix cache refresh in `updateSlug` Server Action
+  - Add `revalidatePath("/p/[profile_id]", "page")`
+
+### 10.6 Verification
+
+- [ ] Pass Biome lint check
+- [ ] Verify behavior
+  - Display mode: same visual as public profile with correct data
+  - Edit mode: all fields editable and bulk-saveable
+  - x_username: flexible input formats normalized correctly
+  - Unsaved changes protection: confirmation dialog on cancel / browser back
+  - On slug change: public profile cache refreshed
+
+---
+
+## Completion Criteria
+
+- [ ] Users can log in via Google/X OAuth
+- [ ] Profile is auto-created on first login
+- [ ] Logged-in users can access their profile from My Page (`/my`)
+- [ ] Unauthenticated users accessing My Page are redirected to `/login`
