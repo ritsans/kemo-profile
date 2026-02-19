@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { isUniqueViolation } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/server";
-import type { ActionResult } from "@/lib/types/action";
+import type { ActionResult, ProfileUpdateResult } from "@/lib/types/action";
+import { normalizeXUsername } from "@/lib/utils/x-username";
 
 const SLUG_REGEX = /^[a-z][a-z0-9_]{2,19}$/;
 const UPDATE_ERROR_MESSAGE = "更新に失敗しました。もう一度お試しください";
@@ -39,6 +40,7 @@ async function updateProfileAndRevalidate(
   update: {
     display_name?: string;
     bio?: string | null;
+    x_username?: string | null;
     slug?: string | null;
     onboarding_completed?: boolean;
   },
@@ -66,6 +68,7 @@ async function updateProfileAndRevalidate(
   }
 
   revalidatePath("/mypage");
+  revalidatePath("/p/[profile_id]", "page");
   return { success: true, data: undefined };
 }
 
@@ -178,4 +181,104 @@ export async function completeOnboarding(): Promise<ActionResult> {
     "Complete onboarding error:",
   );
   return result;
+}
+
+/**
+ * プロフィール一括更新 Server Action
+ * display_name, bio, x_username, slug を一度に更新する
+ */
+export async function updateProfile(
+  _prevState: ProfileUpdateResult | null,
+  formData: FormData,
+): Promise<ProfileUpdateResult> {
+  const fieldErrors: Partial<
+    Record<"display_name" | "bio" | "x_username" | "slug", string>
+  > = {};
+
+  // --- display_name バリデーション ---
+  const displayNameRaw = formData.get("display_name");
+  const displayName =
+    typeof displayNameRaw === "string" ? displayNameRaw.trim() : "";
+  if (displayName.length === 0) {
+    fieldErrors.display_name = "表示名を入力してください";
+  } else if (displayName.length > 50) {
+    fieldErrors.display_name = "表示名は50文字以内で入力してください";
+  }
+
+  // --- bio バリデーション ---
+  const bioRaw = formData.get("bio");
+  const bioTrimmed = typeof bioRaw === "string" ? bioRaw.trim() : "";
+  if (bioTrimmed.length > 160) {
+    fieldErrors.bio = "自己紹介は160文字以内で入力してください";
+  }
+
+  // --- x_username 正規化・バリデーション ---
+  const xUsernameRaw = formData.get("x_username");
+  const xUsernameInput =
+    typeof xUsernameRaw === "string" ? xUsernameRaw.trim() : "";
+  let normalizedXUsername: string | null = null;
+  if (xUsernameInput.length > 0) {
+    const result = normalizeXUsername(xUsernameInput);
+    if (!result.ok) {
+      fieldErrors.x_username = result.error;
+    } else {
+      normalizedXUsername = result.value;
+    }
+  }
+
+  // --- slug バリデーション ---
+  const slugRaw = formData.get("slug");
+  const slugTrimmed = typeof slugRaw === "string" ? slugRaw.trim() : "";
+  let normalizedSlug: string | null = null;
+  if (slugTrimmed.length > 0) {
+    if (!SLUG_REGEX.test(slugTrimmed)) {
+      fieldErrors.slug =
+        "英小文字で始まり、英小文字・数字・アンダースコアのみ、3〜20文字で入力してください";
+    } else {
+      normalizedSlug = slugTrimmed;
+    }
+  }
+
+  // バリデーションエラーがあれば一括返却
+  if (Object.keys(fieldErrors).length > 0) {
+    return { success: false, fieldErrors };
+  }
+
+  // 認証確認
+  const auth = await requireUser();
+  if (!auth.ok) {
+    return {
+      success: false,
+      fieldErrors: { display_name: auth.result.error },
+    };
+  }
+
+  // DB 更新（1回）
+  const { error } = await auth.supabase
+    .from("profiles")
+    .update({
+      display_name: displayName,
+      bio: bioTrimmed.length > 0 ? bioTrimmed : null,
+      x_username: normalizedXUsername,
+      slug: normalizedSlug,
+    })
+    .eq("owner_user_id", auth.userId);
+
+  if (error) {
+    console.error("Profile bulk update error:", error);
+    if (isUniqueViolation(error)) {
+      return {
+        success: false,
+        fieldErrors: { slug: "このURLは既に使用されています" },
+      };
+    }
+    return {
+      success: false,
+      fieldErrors: { display_name: UPDATE_ERROR_MESSAGE },
+    };
+  }
+
+  revalidatePath("/mypage");
+  revalidatePath("/p/[profile_id]", "page");
+  return { success: true };
 }

@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import Image from "next/image";
 import { redirect } from "next/navigation";
 import { logout } from "@/app/actions/auth";
 import { getOAuthErrorMessage } from "@/lib/errors/supabase";
@@ -35,7 +34,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "profile_id, display_name, avatar_url, bio, slug, onboarding_completed",
+      "profile_id, display_name, avatar_url, bio, x_username, slug, onboarding_completed",
     )
     .eq("owner_user_id", user.id)
     .single();
@@ -79,61 +78,46 @@ export default async function MyPage({ searchParams }: MyPageProps) {
           </div>
         )}
 
-        <div className="rounded-lg bg-white p-6 shadow">
-          {/* アバター表示 */}
-          <div className="mb-6 flex justify-center">
-            {profile.avatar_url ? (
-              <Image
-                src={profile.avatar_url}
-                alt={profile.display_name}
-                width={96}
-                height={96}
-                className="rounded-full"
-              />
-            ) : (
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gray-200 text-2xl text-gray-500">
-                {profile.display_name[0]}
-              </div>
-            )}
-          </div>
-
-          {/* プロフィール編集フォーム */}
+        {/* プロフィールカード（表示モード / 編集モード切り替え） */}
+        <div className="mb-6">
           <ProfileEditForm
             displayName={profile.display_name}
             bio={profile.bio}
+            xUsername={profile.x_username}
             slug={suggestedSlug}
+            avatarUrl={profile.avatar_url}
           />
-
-          {/* 外部ログイン連携 */}
-          <div className="mb-6">
-            <LinkedProvidersCard identities={user.identities} />
-          </div>
-
-          {/* プロフィール共有 */}
-          <div className="mb-6">
-            <ShareSection profileUrl={profileUrl} />
-          </div>
-
-          {/* プロフィールページへのリンク */}
-          <div className="mb-6">
-            <a
-              href={profilePath}
-              className="block rounded-md border border-gray-300 px-4 py-2 text-center text-gray-700 hover:bg-gray-50"
-            >
-              公開プロフィールを見る
-            </a>
-          </div>
-
-          {/* ログアウトボタン */}
-          <form action={logout}>
-            <button
-              type="submit"
-              className="w-full rounded-md bg-gray-600 px-4 py-2 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-            >
-              ログアウト
-            </button>
-          </form>
         </div>
+
+        {/* プロフィール共有 */}
+        <div className="mb-6 rounded-lg bg-white p-6 shadow">
+          <ShareSection profileUrl={profileUrl} />
+        </div>
+
+        {/* 外部ログイン連携 */}
+        <div className="mb-6">
+          <LinkedProvidersCard identities={user.identities} />
+        </div>
+
+        {/* プロフィールページへのリンク */}
+        <div className="mb-6">
+          <a
+            href={profilePath}
+            className="block rounded-md border border-gray-300 bg-white px-4 py-2 text-center text-gray-700 hover:bg-gray-50"
+          >
+            公開プロフィールを見る
+          </a>
+        </div>
+
+        {/* ログアウトボタン */}
+        <form action={logout}>
+          <button
+            type="submit"
+            className="w-full rounded-md bg-gray-600 px-4 py-2 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+          >
+            ログアウト
+          </button>
+        </form>
       </div>
     </div>
   );
