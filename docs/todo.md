@@ -33,7 +33,7 @@ Design doc: `docs/plans/2026-02-14-mypage-edit-interface-design.md`
 
 ### 10.1 Server Action: `updateProfile` (bulk save)
 
-- [ ] Create x_username normalization utility (`lib/utils/x-username.ts`)
+- [x] Create x_username normalization utility (`lib/utils/x-username.ts`)
   - `@username` → `username` (strip @)
   - `https://x.com/username` → `username` (extract from URL)
   - `https://twitter.com/username` → `username` (extract from URL)
