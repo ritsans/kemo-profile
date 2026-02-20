@@ -4,8 +4,8 @@ import { logout } from "@/app/actions/auth";
 import { getOAuthErrorMessage } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { generateSuggestedSlug } from "@/lib/utils/slug";
+import { ProfileEditForm } from "./edit-form";
 import { LinkedProvidersCard } from "./linked-providers-card";
-import { ProfileEditForm } from "./profile-edit-form";
 import { ShareSection } from "./share-section";
 
 interface MyPageProps {
@@ -50,7 +50,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
   }
 
   const profilePath = profile.slug
-    ? `/p/@${profile.slug}`
+    ? `/p/${profile.slug}`
     : `/p/${profile.profile_id}`;
 
   // origin を構築してプロフィールの絶対URLを生成
@@ -90,7 +90,19 @@ export default async function MyPage({ searchParams }: MyPageProps) {
         </div>
 
         {/* プロフィール共有 */}
+
         <div className="mb-6 rounded-lg bg-white p-6 shadow">
+          {/* プロフィールページへのリンク */}
+          <div className="mb-6">
+            <a
+              href={profilePath}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-md border border-gray-300 bg-white px-4 py-2 text-center text-gray-700 hover:bg-gray-50"
+            >
+              プレビュー
+            </a>
+          </div>
           <ShareSection profileUrl={profileUrl} />
         </div>
 
@@ -103,9 +115,11 @@ export default async function MyPage({ searchParams }: MyPageProps) {
         <div className="mb-6">
           <a
             href={profilePath}
+            target="_blank"
+            rel="noopener noreferrer"
             className="block rounded-md border border-gray-300 bg-white px-4 py-2 text-center text-gray-700 hover:bg-gray-50"
           >
-            公開プロフィールを見る
+            プレビュー
           </a>
         </div>
 

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { XIcon } from "@/components/icons/x-icon";
 import { createClient } from "@/lib/supabase/server";
 
 interface ProfileData {
@@ -105,15 +106,8 @@ export default async function ProfilePage({ params }: PageProps) {
                 rel="noopener noreferrer"
                 className="flex w-full items-center justify-center gap-3 rounded-lg bg-black px-6 py-4 text-lg font-medium text-white transition hover:bg-gray-800 active:bg-gray-900"
               >
-                <svg
-                  className="h-6 w-6"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-                X (Twitter) で見る
+                <XIcon className="h-6 w-6" />
+                X (Twitter) へ移動
               </a>
             </div>
           )}

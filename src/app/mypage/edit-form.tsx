@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { updateProfile } from "@/app/actions/profile";
+import { XIcon } from "@/components/icons/x-icon";
 import type { ProfileUpdateResult } from "@/lib/types/action";
 
 interface ProfileEditFormProps {
@@ -139,14 +140,7 @@ export function ProfileEditForm({
               rel="noopener noreferrer"
               className="flex w-full items-center justify-center gap-3 rounded-lg bg-black px-6 py-4 text-lg font-medium text-white transition hover:bg-gray-800 active:bg-gray-900"
             >
-              <svg
-                className="h-6 w-6"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-              </svg>
+              <XIcon className="h-6 w-6" />
               X (Twitter) で見る
             </a>
           </div>
@@ -184,6 +178,12 @@ export function ProfileEditForm({
       </div>
 
       <form ref={formRef} action={formAction} className="space-y-5">
+        {/* 保存前の元の値（差分検知用） */}
+        <input type="hidden" name="original_display_name" value={displayName} />
+        <input type="hidden" name="original_bio" value={bio ?? ""} />
+        <input type="hidden" name="original_x_username" value={xUsername ?? ""} />
+        <input type="hidden" name="original_slug" value={slug ?? ""} />
+
         {/* 表示名 */}
         <div>
           <label

@@ -113,10 +113,14 @@ The `env()` helper throws an error at runtime if the variable is undefined, prov
 
 ### SVG Icons
 
- All decorative SVG icons must include `aria-hidden="true"` to satisfy Biome's `a11y/noSvgWithoutTitle` rule.
+All decorative SVG icons must include `aria-hidden="true"` to satisfy Biome's `a11y/noSvgWithoutTitle` rule.
 
 - Decorative icons (icons with adjacent text labels): Add `aria-hidden="true"`
 - Standalone meaningful icons: Add `<title>` element inside `<svg>`
+
+#### Shared Icon Components
+
+Reusable SVG icon components are stored in `src/components/icons/`.
 
 ## Architecture
 

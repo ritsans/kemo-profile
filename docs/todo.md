@@ -38,13 +38,14 @@ Design doc: `docs/plans/2026-02-14-mypage-edit-interface-design.md`
   - `https://x.com/username` → `username` (extract from URL)
   - `https://twitter.com/username` → `username` (extract from URL)
   - Return error for invalid input
-- [ ] Create `updateProfile` Server Action (`app/actions/profile.ts`)
+- [x] Create `updateProfile` Server Action (`app/actions/profile.ts`)
   - Extract all fields from FormData (display_name, bio, x_username, slug)
   - Validate all fields server-side
   - Apply x_username normalization
-  - Update all fields in a single Supabase update call
-  - On slug change: call `revalidatePath("/p/[profile_id]", "page")` to refresh cache
+  - Diff detection: only update changed fields (hidden fields carry original values)
+  - Early return when no fields changed (skip DB update and revalidate)
   - Return per-field errors in aggregate
+  - Note: `revalidatePath("/p/[profile_id]")` は不要（Dynamic Rendering のため no-op）
 
 ### 10.2 My Page Display Mode
 
@@ -56,7 +57,7 @@ Design doc: `docs/plans/2026-02-14-mypage-edit-interface-design.md`
 
 ### 10.3 My Page Edit Mode
 
-- [ ] Refactor `mypage/profile-edit-form.tsx` to support edit mode
+- [x] Refactor `mypage/profile-edit-form.tsx` to support edit mode
   - State management for display ⇔ edit mode toggle
   - Edit mode form layout (vertical stack)
     - Avatar display (read-only) + "Avatar editing coming soon" note
@@ -71,18 +72,18 @@ Design doc: `docs/plans/2026-02-14-mypage-edit-interface-design.md`
 
 ### 10.4 Unsaved Changes Protection
 
-- [ ] Implement dirty state tracking
+- [x] Implement dirty state tracking
   - Detect changes by comparing initial values with current values
-- [ ] Protect Cancel button press
+- [x] Protect Cancel button press
   - If dirty: show `window.confirm()` dialog
   - If clean: return to display mode without confirmation
-- [ ] Protect browser back / page navigation
+- [x] Protect browser back / page navigation
   - Show browser-native dialog via `beforeunload` event when dirty
 
 ### 10.5 Existing Code Fixes
 
-- [ ] Fix cache refresh in `updateSlug` Server Action
-  - Add `revalidatePath("/p/[profile_id]", "page")`
+- [x] ~~Fix cache refresh in `updateSlug` Server Action~~
+  - `/p/[profile_id]` は `cookies()` 使用により Dynamic Rendering のため `revalidatePath` は no-op。対応不要と判断（`docs/revalidate-path.md` 参照）
 
 ### 10.6 Verification
 
@@ -92,7 +93,7 @@ Design doc: `docs/plans/2026-02-14-mypage-edit-interface-design.md`
   - Edit mode: all fields editable and bulk-saveable
   - x_username: flexible input formats normalized correctly
   - Unsaved changes protection: confirmation dialog on cancel / browser back
-  - On slug change: public profile cache refreshed
+  - No-change save: DB update and revalidate are skipped
 
 ---
 

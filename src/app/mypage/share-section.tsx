@@ -115,9 +115,8 @@ export function ShareSection({ profileUrl }: ShareSectionProps) {
   return (
     <>
       {/* セクションヘッダ */}
-      <div className="rounded-lg bg-white p-6 shadow">
         <h2 className="mb-4 text-lg font-semibold text-gray-900">
-          プロフィールを共有
+          公開プロフィールを共有する
         </h2>
 
         {/* QRコード表示ボタン */}
@@ -140,7 +139,6 @@ export function ShareSection({ profileUrl }: ShareSectionProps) {
             {isCopied ? "コピーしました!" : "URLをコピー"}
           </button>
         </div>
-      </div>
 
       {/* QRモーダル */}
       {isQrModalOpen && (
