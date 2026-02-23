@@ -2,9 +2,9 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import { useMemo, useState } from "react";
+import { XIcon } from "@/components/icons/x-icon";
 import { env } from "@/lib/env.client";
 import type { Database } from "@/lib/supabase/database.types";
-import { XIcon } from "@/components/icons/x-icon";
 import { EmailLoginForm } from "./email-login-form";
 
 /**

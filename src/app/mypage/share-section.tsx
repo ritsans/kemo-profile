@@ -115,30 +115,30 @@ export function ShareSection({ profileUrl }: ShareSectionProps) {
   return (
     <>
       {/* セクションヘッダ */}
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">
-          公開プロフィールを共有する
-        </h2>
+      <h2 className="mb-4 text-lg font-semibold text-gray-900">
+        公開プロフィールを共有する
+      </h2>
 
-        {/* QRコード表示ボタン */}
+      {/* QRコード表示ボタン */}
+      <button
+        type="button"
+        onClick={() => setIsQrModalOpen(true)}
+        className="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      >
+        <QrCodeIcon />
+        QRコードを表示
+      </button>
+
+      {/* URLコピーリンク */}
+      <div className="mt-3 text-center">
         <button
           type="button"
-          onClick={() => setIsQrModalOpen(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          onClick={handleCopy}
+          className="text-sm text-blue-600 hover:text-blue-700"
         >
-          <QrCodeIcon />
-          QRコードを表示
+          {isCopied ? "コピーしました!" : "URLをコピー"}
         </button>
-
-        {/* URLコピーリンク */}
-        <div className="mt-3 text-center">
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="text-sm text-blue-600 hover:text-blue-700"
-          >
-            {isCopied ? "コピーしました!" : "URLをコピー"}
-          </button>
-        </div>
+      </div>
 
       {/* QRモーダル */}
       {isQrModalOpen && (

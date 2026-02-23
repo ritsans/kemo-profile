@@ -122,6 +122,14 @@ All decorative SVG icons must include `aria-hidden="true"` to satisfy Biome's `a
 
 Reusable SVG icon components are stored in `src/components/icons/`.
 
+### Form Input Components
+
+**IMPORTANT**: Do NOT use bare `<input>` or `<textarea>` elements. Always use the shared components from `src/components/ui/input.tsx`.
+
+`import { Input, Textarea } from "@/components/ui/input";`
+
+To change the shared form style, edit `INPUT_CLASS` in `src/components/ui/input.tsx` — it applies to all forms at once.
+
 ## Architecture
 
 ### URL Structure

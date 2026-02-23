@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 import { sendMagicLink } from "@/app/actions/magic-link";
+import { Input } from "@/components/ui/input";
 import type { ActionResult } from "@/lib/types/action";
 
 export function EmailLoginForm() {
@@ -20,14 +21,12 @@ export function EmailLoginForm() {
 
   return (
     <form action={formAction} className="space-y-3">
-      <input
+      <Input
         type="email"
         name="email"
         placeholder="メールアドレス"
         required
         disabled={isPending}
-        className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm
-                   focus:border-gray-400 focus:outline-none disabled:bg-gray-100"
       />
       {state && !state.success && (
         <p className="text-sm text-red-600">{state.error}</p>

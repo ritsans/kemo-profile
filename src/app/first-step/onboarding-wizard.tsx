@@ -10,6 +10,7 @@ import {
   updateDisplayName,
   updateSlug,
 } from "@/app/actions/profile";
+import { Input, Textarea } from "@/components/ui/input";
 import type { ActionResult } from "@/lib/types/action";
 
 interface OnboardingWizardProps {
@@ -180,8 +181,6 @@ export function OnboardingWizard({
   };
 
   /* ── 共通スタイル ── */
-  const inputClass =
-    "w-full rounded-lg border border-gray-200 bg-gray-50/60 px-4 py-3 text-[15px] text-gray-900 placeholder:text-gray-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-gray-100";
   const primaryBtn =
     "inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-7 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-400";
   const ghostBtn =
@@ -239,7 +238,7 @@ export function OnboardingWizard({
                   >
                     表示名
                   </label>
-                  <input
+                  <Input
                     type="text"
                     id="display_name"
                     name="display_name"
@@ -248,7 +247,6 @@ export function OnboardingWizard({
                     maxLength={50}
                     disabled={isBypassMode ? false : isDisplayNamePending}
                     placeholder="例: ケモノ太郎"
-                    className={inputClass}
                   />
                   <p className="mt-1.5 mb-6 text-xs text-gray-400">
                     あとから変更できます
@@ -309,7 +307,7 @@ export function OnboardingWizard({
                   >
                     自己紹介
                   </label>
-                  <textarea
+                  <Textarea
                     id="bio"
                     name="bio"
                     defaultValue={bio ?? ""}
@@ -317,7 +315,7 @@ export function OnboardingWizard({
                     rows={3}
                     disabled={isBypassMode ? false : isBioPending}
                     placeholder="例: イラストレーター / 猫好き / コミケ参加者"
-                    className={`${inputClass} resize-none`}
+                    className="resize-none"
                   />
                   <p className="mt-1.5 mb-6 text-xs text-gray-400">
                     160文字以内・あとから変更できます
@@ -407,7 +405,7 @@ export function OnboardingWizard({
                   >
                     カスタムURL
                   </label>
-                  <input
+                  <Input
                     type="text"
                     id="slug"
                     name="slug"
@@ -415,7 +413,6 @@ export function OnboardingWizard({
                     maxLength={20}
                     disabled={isBypassMode ? false : isSlugPending}
                     placeholder="例: my_name"
-                    className={inputClass}
                   />
                   <p className="mt-1.5 mb-6 text-xs text-gray-400">
                     英小文字で始まり、英小文字・数字・アンダースコアのみ、3〜20文字

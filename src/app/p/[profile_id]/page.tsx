@@ -100,14 +100,16 @@ export default async function ProfilePage({ params }: PageProps) {
           {/* X (Twitter) リンクボタン */}
           {profile.x_username && (
             <div className="mt-8">
+              <p className="mb-2 text-center text-sm text-gray-500">
+                @{profile.x_username}
+              </p>
               <a
                 href={`https://x.com/${profile.x_username}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex w-full items-center justify-center gap-3 rounded-lg bg-black px-6 py-4 text-lg font-medium text-white transition hover:bg-gray-800 active:bg-gray-900"
               >
-                <XIcon className="h-6 w-6" />
-                X (Twitter) へ移動
+                <XIcon className="h-6 w-6" />X (Twitter) へ移動
               </a>
             </div>
           )}

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { updateProfile } from "@/app/actions/profile";
 import { XIcon } from "@/components/icons/x-icon";
+import { Input, Textarea } from "@/components/ui/input";
 import type { ProfileUpdateResult } from "@/lib/types/action";
 
 interface ProfileEditFormProps {
@@ -140,8 +141,7 @@ export function ProfileEditForm({
               rel="noopener noreferrer"
               className="flex w-full items-center justify-center gap-3 rounded-lg bg-black px-6 py-4 text-lg font-medium text-white transition hover:bg-gray-800 active:bg-gray-900"
             >
-              <XIcon className="h-6 w-6" />
-              X (Twitter) で見る
+              <XIcon className="h-6 w-6" />X (Twitter) で見る
             </a>
           </div>
         ) : (
@@ -181,7 +181,11 @@ export function ProfileEditForm({
         {/* 保存前の元の値（差分検知用） */}
         <input type="hidden" name="original_display_name" value={displayName} />
         <input type="hidden" name="original_bio" value={bio ?? ""} />
-        <input type="hidden" name="original_x_username" value={xUsername ?? ""} />
+        <input
+          type="hidden"
+          name="original_x_username"
+          value={xUsername ?? ""}
+        />
         <input type="hidden" name="original_slug" value={slug ?? ""} />
 
         {/* 表示名 */}
@@ -192,7 +196,7 @@ export function ProfileEditForm({
           >
             表示名 <span className="text-red-500">*</span>
           </label>
-          <input
+          <Input
             type="text"
             id="display_name"
             name="display_name"
@@ -201,7 +205,6 @@ export function ProfileEditForm({
             required
             maxLength={50}
             disabled={isPending}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
           />
           {fieldErrors.display_name && (
             <p className="mt-1 text-sm text-red-600">
@@ -218,7 +221,7 @@ export function ProfileEditForm({
           >
             自己紹介
           </label>
-          <textarea
+          <Textarea
             id="bio"
             name="bio"
             value={currentBio}
@@ -227,7 +230,6 @@ export function ProfileEditForm({
             rows={3}
             disabled={isPending}
             placeholder="自己紹介を入力してください（160文字以内）"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
           />
           <div className="mt-1 flex items-center justify-between">
             <span className="text-xs text-gray-400">
@@ -247,7 +249,7 @@ export function ProfileEditForm({
           >
             X (Twitter) ユーザー名
           </label>
-          <input
+          <Input
             type="text"
             id="x_username"
             name="x_username"
@@ -255,7 +257,6 @@ export function ProfileEditForm({
             onChange={(e) => setCurrentXUsername(e.target.value)}
             disabled={isPending}
             placeholder="username または https://x.com/username"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
           />
           {fieldErrors.x_username && (
             <p className="mt-1 text-sm text-red-600">
@@ -272,7 +273,7 @@ export function ProfileEditForm({
           >
             カスタムURL
           </label>
-          <input
+          <Input
             type="text"
             id="slug"
             name="slug"
@@ -281,7 +282,6 @@ export function ProfileEditForm({
             maxLength={20}
             disabled={isPending}
             placeholder="my_name"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
           />
           <p className="mt-1 text-xs text-gray-400">
             英小文字で始まり、英小文字・数字・アンダースコアのみ、3〜20文字

@@ -17,7 +17,7 @@ type AuthContext =
     }
   | {
       ok: false;
-      result: ActionResult;
+      result: Extract<ActionResult, { success: false }>;
     };
 
 async function requireUser(): Promise<AuthContext> {
@@ -253,9 +253,11 @@ export async function updateProfile(
   }
 
   // --- 差分検知: 保存前の元の値と比較して変更フィールドだけ特定 ---
-  const originalDisplayName = (formData.get("original_display_name") as string) ?? "";
+  const originalDisplayName =
+    (formData.get("original_display_name") as string) ?? "";
   const originalBio = (formData.get("original_bio") as string) ?? "";
-  const originalXUsername = (formData.get("original_x_username") as string) ?? "";
+  const originalXUsername =
+    (formData.get("original_x_username") as string) ?? "";
   const originalSlug = (formData.get("original_slug") as string) ?? "";
 
   const update: Partial<{
@@ -269,7 +271,8 @@ export async function updateProfile(
   if ((bioTrimmed || null) !== (originalBio || null)) {
     update.bio = bioTrimmed.length > 0 ? bioTrimmed : null;
   }
-  if (normalizedXUsername !== (originalXUsername || null)) update.x_username = normalizedXUsername;
+  if (normalizedXUsername !== (originalXUsername || null))
+    update.x_username = normalizedXUsername;
   if (normalizedSlug !== (originalSlug || null)) update.slug = normalizedSlug;
 
   // 変更なし → DB更新・revalidate不要
