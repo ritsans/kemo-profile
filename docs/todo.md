@@ -49,10 +49,11 @@ Design doc: `docs/plans/2026-02-14-mypage-edit-interface-design.md`
 
 ### 10.2 My Page Display Mode
 
-- [ ] Update `mypage/page.tsx`
+- [x] Update `mypage/page.tsx`
   - Change to same visual as public profile (avatar 120x120, display name, bio, X link button)
   - Update select to fetch x_username from DB
   - Place "Edit" button at top-right of page
+    - ※ 仕様変更: 編集ボタン方式ではなく左右2ペイン（PC）/ タブ切替（モバイル）方式に変更
   - Place OAuth card, public profile link, and logout button outside the card
 
 ### 10.3 My Page Edit Mode
@@ -69,6 +70,12 @@ Design doc: `docs/plans/2026-02-14-mypage-edit-interface-design.md`
   - Call `updateProfile` Server Action via `useActionState`
   - On save success: switch to display mode + toast notification (2 seconds)
   - On error: show red error message directly below the relevant field
+- [x] Divide `edit-form.tsx` responsibilities into sub-components
+  - `profile-edit-fields.tsx`: 入力フォームUI（右ペイン）
+  - `profile-preview-card.tsx`: プレビュー表示（左ペイン）
+  - `edit-form.tsx`: 状態管理・Server Action 呼び出しのオーケストレーターに特化
+- [x] Create shared form input components (`src/components/ui/input.tsx`)
+  - `Input` / `Textarea` コンポーネントを共通化、全フォームに適用
 
 ### 10.4 Unsaved Changes Protection
 

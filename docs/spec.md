@@ -76,7 +76,7 @@ kemono-profileは、同人イベント・オフ会などで会った相手と「
 4. OAuthプロバイダーから取得したメタデータを以下のフィールドに保存:
    - `display_name`: プロバイダーから取得した表示名
    - `avatar_url`: プロバイダーから取得したアバター画像URL
-   - `x_username`: X OAuth の場合のみ設定（Google OAuth の場合は null 手動で入力します）
+   - `social_links`: X OAuth の場合は `{"x": "username"}` を設定（Google OAuth の場合は `{}` 空オブジェクト）
 5. 作成完了後、`/p/{profile_id}`（公開プロフィールページ）へリダイレクト
 
 ### 5.3 スコープ外
@@ -90,7 +90,7 @@ kemono-profileは、同人イベント・オフ会などで会った相手と「
 
 #### X (Twitter) OAuth
 
-* `user_name` → `x_username`に保存
+* `user_name` → `social_links.x` に保存（`social_links = {"x": "username"}`）
 * `name` → `display_name`に保存
 * `profile_image_url` または `avatar_url` → `avatar_url`に保存
 
@@ -98,12 +98,12 @@ kemono-profileは、同人イベント・オフ会などで会った相手と「
 
 * `name` → `display_name`に保存
 * `picture` → `avatar_url`に保存
-* `x_username` は null のまま（ユーザーが後から`/edit`で手動で追加）
+* `social_links` は `{}` 空オブジェクト（ユーザーが後から`/edit`で手動で追加）
 
 **注意事項:**
-- X OAuthでログインしたユーザーは`x_username`が自動設定される
-- Google OAuthでログインしたユーザーは`x_username`が未設定のままプロフィールが作成される
-- `x_username`が未設定のユーザーは、編集画面（`/edit`）で後から追加できる
+- X OAuthでログインしたユーザーは`social_links.x`が自動設定される
+- Google OAuthでログインしたユーザーは`social_links`が空のままプロフィールが作成される
+- SNSリンクが未設定のユーザーは、編集画面（`/edit`）で後から追加できる
 
 ---
 
@@ -126,18 +126,53 @@ kemono-profileは、同人イベント・オフ会などで会った相手と「
 * `avatar`（アバター）
 * Xへのリンク（最優先の大きなボタン）
 
-他にDiscordやPixivのアカウントなど追加アカウント機能はMVPでは後回しにできる（設計上は拡張可能にする）。
+SNSリンクは `social_links` JSONB カラムでまとめて管理する。新しいSNSプラットフォームの追加はプラットフォーム定義ファイル（`src/lib/social-platforms.ts`）に1行追記するだけで対応できる設計とする。詳細はセクション 7.3 を参照。
 
 ### 7.2 必須データ項目
 
 * `display_name`：必須
 * `avatar`：必須（未設定時はプレースホルダー表示を許容し、プロフィール完成までに設定を促す）
-* `x_username`：**任意**（設定されている場合、URLまたはusername入力を受け付け、保存はusernameに正規化する方針）
-  - X OAuth でログインした場合は自動設定される
-  - Google OAuth でログインした場合は null（ユーザーが`/edit`で後から追加可能）
+* `social_links`：**任意**（JSONB。プラットフォームごとのユーザー識別子を格納するオブジェクト）
+  - 形式: `{"x": "username", "pixiv": "12345678", ...}`
+  - X OAuth でログインした場合は `{"x": "username"}` が自動設定される
+  - Google OAuth でログインした場合は `{}` 空オブジェクト（ユーザーが`/edit`で後から追加可能）
+  - 各プラットフォームの値は正規化されたユーザー識別子のみを保存（URLは保存しない）
 * `bio`：**任意**（自己紹介文、最大160文字）
 * `slug`：**任意**（カスタムURL識別子、3-20文字、英小文字開始、英小文字・数字・アンダースコアのみ、ユニーク制約あり）
   - オンボーディング時またはプロフィール編集画面で設定可能
+
+### 7.3 SNSリンクの管理方式（social_links）
+
+SNSリンクは `profiles.social_links` JSONB カラムに格納する。プラットフォームの定義は `src/lib/social-platforms.ts` で一元管理し、フォームUI・公開プロフィール表示・バリデーションのすべてがこの定義を参照する。
+
+#### 対応プラットフォーム（初期）
+
+| キー | 表示名 | プロフィールURL | 入力の正規化 |
+|---|---|---|---|
+| `x` | X (Twitter) | `https://x.com/{value}` | `@`除去、URL→username抽出 |
+
+#### 後から追加するプラットフォーム（例）
+
+| キー | 表示名 | プロフィールURL | 入力の正規化 |
+|---|---|---|---|
+| `pixiv` | Pixiv | `https://pixiv.me/{value}` | URL→ID抽出 |
+| `bluesky` | Bluesky | `https://bsky.app/profile/{value}` | `@`除去 |
+| `discord` | Discord | なし（ユーザー名のみ表示） | そのまま |
+| `misskey` | Misskey | `https://{instance}/@{value}` | 要検討 |
+
+#### 追加手順
+
+新しいSNSプラットフォームを追加する場合、`src/lib/social-platforms.ts` に定義を1行追加するだけで、以下が自動的に対応する:
+
+1. 編集フォームに入力欄が出現
+2. 公開プロフィールにリンクボタンが出現
+3. バリデーション・正規化が適用される
+
+DBマイグレーションやServer Actionの修正は不要。
+
+#### 移行
+
+既存の `profiles.x_username` カラムのデータを `social_links.x` に移行する。移行完了後、`x_username` カラムは廃止する。移行はDBマイグレーションスクリプトで行う。
 
 ---
 
@@ -155,7 +190,7 @@ kemono-profileは、同人イベント・オフ会などで会った相手と「
 
 * `profile_id`
 * `display_name`
-* （推奨）`x_username`（一覧から即Xへ遷移するため）
+* （推奨）`social_links`（一覧から即SNSへ遷移するため）
 
 ### 8.2 お気に入り（ピン留め）
 
@@ -193,7 +228,7 @@ kemono-profileは、同人イベント・オフ会などで会った相手と「
 * 初回ログイン時に `profiles` を**自動作成する**（ユーザーの手動操作は不要）
 * `profile_id` は推測困難なランダムIDで生成し、公開URLに使う
 * `profiles.owner_user_id = user_id` を必ず設定する
-* OAuthプロバイダーから取得したメタデータ（`display_name`、`avatar_url`、`x_username`）を自動的に保存する（詳細はセクション5.4参照）
+* OAuthプロバイダーから取得したメタデータ（`display_name`、`avatar_url`、`social_links`）を自動的に保存する（詳細はセクション5.4参照）
 
 ### 10.2 リダイレクト先
 
@@ -214,9 +249,9 @@ kemono-profileは、同人イベント・オフ会などで会った相手と「
 
 ### 10.4 プロフィール未完成時の対応
 
-* Google OAuth でログインしたユーザーは `x_username` が未設定の状態でプロフィールが作成される
-* この場合、公開プロフィールページで「X アカウントを追加」などの誘導UIを表示し、編集画面へ案内する
-* `x_username` が設定されていない場合、X へのリンクボタンは非表示または無効化する
+* Google OAuth でログインしたユーザーは `social_links` が空オブジェクトの状態でプロフィールが作成される
+* この場合、公開プロフィールページで「SNSアカウントを追加」などの誘導UIを表示し、編集画面へ案内する
+* `social_links` が空の場合、SNSリンクボタンはすべて非表示となる
 
 ---
 
@@ -224,21 +259,22 @@ kemono-profileは、同人イベント・オフ会などで会った相手と「
 
 ### 11.1 クラウドDB
 
-* `profiles(profile_id, owner_user_id, display_name, avatar_url, x_username, bio, slug, onboarding_completed, created_at, updated_at)`
+* `profiles(profile_id, owner_user_id, display_name, avatar_url, social_links, bio, slug, onboarding_completed, created_at, updated_at)`
   * `profile_id`: base62の15文字ランダムID（主キー）
   * `owner_user_id`: プロフィール所有者のuser_id（ユニーク制約）
   * `display_name`: ハンドルネーム（必須、最大50文字）
   * `avatar_url`: アバター画像URL（必須）
-  * `x_username`: X (Twitter) のユーザー名（任意）
+  * `social_links`: SNSリンク（JSONB、デフォルト `{}`）。形式: `{"x": "username", "pixiv": "12345", ...}`
   * `bio`: 自己紹介文（任意、最大160文字）
   * `slug`: カスタムURL識別子（任意、3-20文字、ユニーク制約）
   * `onboarding_completed`: オンボーディング完了フラグ（デフォルト false）
+  * ~~`x_username`~~: **廃止予定** — `social_links.x` に移行。移行完了後にカラム削除
 * `bookmarks(user_id, profile_id, deleted_at, created_at, updated_at)`
   * 一意制約：`(user_id, profile_id)`
 
 ### 11.2 端末DB（IndexedDB）
 
-* `view_history(profile_id, last_viewed_at, display_name, x_username)`
+* `view_history(profile_id, last_viewed_at, display_name, social_links)`
 * `saved_local(profile_id, deleted_at, updated_at, [sync_state])`
 
 ---
@@ -247,7 +283,7 @@ kemono-profileは、同人イベント・オフ会などで会った相手と「
 
 * 会場モード（軽量ルーティング・PWA最適化等）
 * お気に入りの期限削除
-* Discord等の追加リンクの本格実装（後回し可）
+* ~~Discord等の追加リンクの本格実装（後回し可）~~ → `social_links` JSONB で対応済み（プラットフォーム定義の追加のみで対応可能）
 * 相互交換・承認・フォロー自動化
 * 閲覧履歴のクラウド同期
 
@@ -258,8 +294,8 @@ kemono-profileは、同人イベント・オフ会などで会った相手と「
 1. ログインした作る側がプロフィールを作成・編集できる
 2. 初回ログイン時にオンボーディング画面が表示され、3ステップのウィザードで基本情報を設定できる
 3. 公開プロフィール `/p/{profile_id}` または `/p/@{slug}` が非ログインでも表示できる
-4. 公開プロフィールにアクセスした直後に、ハンドルネーム・アバター・Xリンクが見える
-5. Xリンクをタップすると、Xプロフィールへ遷移できる
+4. 公開プロフィールにアクセスした直後に、ハンドルネーム・アバター・SNSリンクが見える
+5. SNSリンクをタップすると、該当SNSのプロフィールへ遷移できる
 6. 公開プロフィール閲覧が端末の閲覧履歴として自動保存され、上限100件で古いものが削除される
 7. お気に入りを保存/解除でき、端末に状態が残る
 8. ログイン済み閲覧者はお気に入りがクラウドにも保存され、論理削除で解除できる
