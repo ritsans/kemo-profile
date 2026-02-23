@@ -66,9 +66,9 @@ export default async function MyPage({ searchParams }: MyPageProps) {
   const suggestedSlug = profile.slug || generateSuggestedSlug(user);
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="mx-auto max-w-md">
-        <h1 className="mb-8 text-center text-2xl font-bold text-gray-900">
+    <div className="min-h-screen bg-gray-50 px-4 py-6 sm:py-8">
+      <div className="mx-auto max-w-6xl">
+        <h1 className="mb-6 text-2xl font-bold text-gray-900 sm:mb-8 sm:text-3xl">
           マイページ
         </h1>
 
@@ -78,7 +78,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
           </div>
         )}
 
-        {/* プロフィールカード（表示モード / 編集モード切り替え） */}
+        {/* プレビュー + 編集（PC 2ペイン / mobile 1画面切り替え） */}
         <div className="mb-6">
           <ProfileEditForm
             displayName={profile.display_name}
@@ -86,36 +86,22 @@ export default async function MyPage({ searchParams }: MyPageProps) {
             xUsername={profile.x_username}
             slug={suggestedSlug}
             avatarUrl={profile.avatar_url}
+            previewPath={profilePath}
           />
         </div>
 
-        {/* プロフィール共有 */}
-
-        <div className="mb-6 rounded-lg bg-white p-6 shadow">
-          {/* プロフィールページへのリンク */}
-          <div className="mb-6">
-            <a
-              href={profilePath}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block rounded-md border border-gray-300 bg-white px-4 py-2 text-center text-gray-700 hover:bg-gray-50"
-            >
-              プレビュー
-            </a>
+        <div className="mb-6 grid gap-6 lg:grid-cols-2">
+          <div className="rounded-lg bg-white p-6 shadow">
+            <ShareSection profileUrl={profileUrl} />
           </div>
-          <ShareSection profileUrl={profileUrl} />
-        </div>
-
-        {/* 外部ログイン連携 */}
-        <div className="mb-6">
           <LinkedProvidersCard identities={user.identities} />
         </div>
 
         {/* ログアウトボタン */}
-        <form action={logout}>
+        <form action={logout} className="flex justify-end">
           <button
             type="submit"
-            className="w-full rounded-md bg-gray-600 px-4 py-2 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            className="w-full rounded-md bg-gray-600 px-4 py-2 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 sm:w-auto"
           >
             ログアウト
           </button>

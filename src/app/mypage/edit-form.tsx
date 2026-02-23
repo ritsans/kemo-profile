@@ -1,11 +1,15 @@
 "use client";
 
-import Image from "next/image";
-import { useActionState, useEffect, useRef, useState } from "react";
+/**
+ * マイページ編集エリアの親コンテナ。
+ * 状態管理（保存・差分・離脱保護）と、プレビュー/編集ペインのレイアウトを担当する。
+ */
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { updateProfile } from "@/app/actions/profile";
-import { XIcon } from "@/components/icons/x-icon";
-import { Input, Textarea } from "@/components/ui/input";
 import type { ProfileUpdateResult } from "@/lib/types/action";
+import { normalizeXUsername } from "@/lib/utils/x-username";
+import { ProfileEditFields } from "./profile-edit-fields";
+import { ProfilePreviewCard } from "./profile-preview-card";
 
 interface ProfileEditFormProps {
   displayName: string;
@@ -13,6 +17,7 @@ interface ProfileEditFormProps {
   xUsername: string | null;
   slug: string | null;
   avatarUrl: string | null;
+  previewPath: string;
 }
 
 export function ProfileEditForm({
@@ -21,295 +26,168 @@ export function ProfileEditForm({
   xUsername,
   slug,
   avatarUrl,
+  previewPath,
 }: ProfileEditFormProps) {
-  const [isEditing, setIsEditing] = useState(false);
+  const [mobilePane, setMobilePane] = useState<"preview" | "edit">("preview");
   const [savedMessage, setSavedMessage] = useState(false);
 
-  // フォーム内の現在値（dirty check 用）
+  // フォーム内の現在値
   const [currentDisplayName, setCurrentDisplayName] = useState(displayName);
   const [currentBio, setCurrentBio] = useState(bio ?? "");
   const [currentXUsername, setCurrentXUsername] = useState(xUsername ?? "");
   const [currentSlug, setCurrentSlug] = useState(slug ?? "");
 
-  const formRef = useRef<HTMLFormElement>(null);
+  // 差分検知用の基準値（最後に保存された値）
+  const [originalDisplayName, setOriginalDisplayName] = useState(displayName);
+  const [originalBio, setOriginalBio] = useState(bio ?? "");
+  const [originalXUsername, setOriginalXUsername] = useState(xUsername ?? "");
+  const [originalSlug, setOriginalSlug] = useState(slug ?? "");
 
   const [state, formAction, isPending] = useActionState<
     ProfileUpdateResult | null,
     FormData
   >(updateProfile, null);
 
-  // 保存成功時: 表示モードへ切り替え＆「保存しました」表示
+  const normalizedPreviewXUsername = useMemo(() => {
+    const input = currentXUsername.trim();
+    if (input.length === 0) return null;
+    const normalized = normalizeXUsername(input);
+    return normalized.ok ? normalized.value : null;
+  }, [currentXUsername]);
+
+  // 保存成功時: 基準値更新＆保存完了メッセージ表示
   useEffect(() => {
     if (state?.success) {
-      setIsEditing(false);
+      const nextDisplayName = currentDisplayName.trim();
+      const nextBio = currentBio.trim();
+      const nextSlug = currentSlug.trim();
+      const nextXInput = currentXUsername.trim();
+      const nextXNormalized =
+        nextXInput.length === 0
+          ? ""
+          : (() => {
+              const normalized = normalizeXUsername(nextXInput);
+              return normalized.ok ? normalized.value : nextXInput;
+            })();
+
+      setCurrentDisplayName(nextDisplayName);
+      setCurrentBio(nextBio);
+      setCurrentSlug(nextSlug);
+      setCurrentXUsername(nextXNormalized);
+
+      setOriginalDisplayName(nextDisplayName);
+      setOriginalBio(nextBio);
+      setOriginalSlug(nextSlug);
+      setOriginalXUsername(nextXNormalized);
+
       setSavedMessage(true);
       const timer = setTimeout(() => setSavedMessage(false), 2000);
       return () => clearTimeout(timer);
     }
-  }, [state]);
+  }, [state, currentDisplayName, currentBio, currentSlug, currentXUsername]);
 
-  // dirty チェック: 初期 props と現在値を比較
+  // dirty チェック
   const isDirty =
-    currentDisplayName !== displayName ||
-    currentBio !== (bio ?? "") ||
-    currentXUsername !== (xUsername ?? "") ||
-    currentSlug !== (slug ?? "");
+    currentDisplayName !== originalDisplayName ||
+    currentBio !== originalBio ||
+    currentXUsername !== originalXUsername ||
+    currentSlug !== originalSlug;
 
-  // ブラウザ離脱保護（編集中かつ未保存の場合）
+  // ブラウザ離脱保護（未保存の場合）
   useEffect(() => {
-    if (!isEditing || !isDirty) return;
+    if (!isDirty) return;
     const handler = (e: BeforeUnloadEvent) => e.preventDefault();
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [isEditing, isDirty]);
+  }, [isDirty]);
 
-  // キャンセルボタン: 未保存変更がある場合は確認ダイアログ
-  const handleCancel = () => {
+  // リセットボタン: 未保存変更がある場合は確認ダイアログ
+  const handleReset = () => {
     if (
       isDirty &&
       !window.confirm("保存していない変更があります。破棄しますか？")
     ) {
       return;
     }
-    // フォームの値をリセット
-    setCurrentDisplayName(displayName);
-    setCurrentBio(bio ?? "");
-    setCurrentXUsername(xUsername ?? "");
-    setCurrentSlug(slug ?? "");
-    setIsEditing(false);
+    setCurrentDisplayName(originalDisplayName);
+    setCurrentBio(originalBio);
+    setCurrentXUsername(originalXUsername);
+    setCurrentSlug(originalSlug);
   };
 
   // フィールドエラーの取り出し（型ガード付き）
   const fieldErrors = state && !state.success ? state.fieldErrors : {};
+  const previewDisplayName =
+    currentDisplayName.trim() || "表示名を入力してください";
+  const previewBio = currentBio.trim();
 
-  // --- 表示モード ---
-  if (!isEditing) {
-    return (
-      <div className="relative rounded-lg bg-white p-8 shadow-lg">
-        {/* 編集ボタン */}
-        <button
-          type="button"
-          onClick={() => setIsEditing(true)}
-          className="absolute top-4 right-4 rounded-md border border-gray-300 px-3 py-1 text-sm text-gray-600 hover:bg-gray-50"
-        >
-          編集
-        </button>
-
-        {/* 保存完了メッセージ */}
-        {savedMessage && (
-          <p className="mb-4 text-center text-sm text-green-600">
-            保存しました
-          </p>
-        )}
-
-        {/* アバター */}
-        <div className="flex justify-center">
-          {avatarUrl ? (
-            <Image
-              src={avatarUrl}
-              alt={displayName}
-              width={120}
-              height={120}
-              className="rounded-full object-cover"
-              unoptimized={!avatarUrl.startsWith("http")}
-            />
-          ) : (
-            <div className="flex h-30 w-30 items-center justify-center rounded-full bg-gray-200 text-4xl text-gray-400">
-              👤
-            </div>
-          )}
-        </div>
-
-        {/* 表示名 */}
-        <h2 className="mt-6 text-center text-2xl font-bold text-gray-900">
-          {displayName}
-        </h2>
-
-        {/* bio */}
-        {bio && (
-          <p className="mt-3 whitespace-pre-wrap text-center text-sm text-gray-600">
-            {bio}
-          </p>
-        )}
-
-        {/* X リンクボタン */}
-        {xUsername ? (
-          <div className="mt-8">
-            <a
-              href={`https://x.com/${xUsername}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex w-full items-center justify-center gap-3 rounded-lg bg-black px-6 py-4 text-lg font-medium text-white transition hover:bg-gray-800 active:bg-gray-900"
-            >
-              <XIcon className="h-6 w-6" />X (Twitter) で見る
-            </a>
-          </div>
-        ) : (
-          <div className="mt-8 text-center text-sm text-gray-500">
-            SNSリンクは未設定です
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // --- 編集モード ---
   return (
-    <div className="rounded-lg bg-white p-6 shadow-lg">
-      {/* アバター（編集不可） */}
-      <div className="mb-4 flex flex-col items-center">
-        {avatarUrl ? (
-          <Image
-            src={avatarUrl}
-            alt={displayName}
-            width={120}
-            height={120}
-            className="rounded-full object-cover"
-            unoptimized={!avatarUrl.startsWith("http")}
-          />
-        ) : (
-          <div className="flex h-30 w-30 items-center justify-center rounded-full bg-gray-200 text-4xl text-gray-400">
-            👤
-          </div>
-        )}
-        <p className="mt-2 text-xs text-gray-400">
-          ※ アバター変更は今後対応予定
-        </p>
-      </div>
-
-      <form ref={formRef} action={formAction} className="space-y-5">
-        {/* 保存前の元の値（差分検知用） */}
-        <input type="hidden" name="original_display_name" value={displayName} />
-        <input type="hidden" name="original_bio" value={bio ?? ""} />
-        <input
-          type="hidden"
-          name="original_x_username"
-          value={xUsername ?? ""}
-        />
-        <input type="hidden" name="original_slug" value={slug ?? ""} />
-
-        {/* 表示名 */}
-        <div>
-          <label
-            htmlFor="display_name"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
-            表示名 <span className="text-red-500">*</span>
-          </label>
-          <Input
-            type="text"
-            id="display_name"
-            name="display_name"
-            value={currentDisplayName}
-            onChange={(e) => setCurrentDisplayName(e.target.value)}
-            required
-            maxLength={50}
-            disabled={isPending}
-          />
-          {fieldErrors.display_name && (
-            <p className="mt-1 text-sm text-red-600">
-              {fieldErrors.display_name}
-            </p>
-          )}
-        </div>
-
-        {/* 自己紹介 */}
-        <div>
-          <label
-            htmlFor="bio"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
-            自己紹介
-          </label>
-          <Textarea
-            id="bio"
-            name="bio"
-            value={currentBio}
-            onChange={(e) => setCurrentBio(e.target.value)}
-            maxLength={160}
-            rows={3}
-            disabled={isPending}
-            placeholder="自己紹介を入力してください（160文字以内）"
-          />
-          <div className="mt-1 flex items-center justify-between">
-            <span className="text-xs text-gray-400">
-              {currentBio.length} / 160
-            </span>
-          </div>
-          {fieldErrors.bio && (
-            <p className="mt-1 text-sm text-red-600">{fieldErrors.bio}</p>
-          )}
-        </div>
-
-        {/* X ユーザー名 */}
-        <div>
-          <label
-            htmlFor="x_username"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
-            X (Twitter) ユーザー名
-          </label>
-          <Input
-            type="text"
-            id="x_username"
-            name="x_username"
-            value={currentXUsername}
-            onChange={(e) => setCurrentXUsername(e.target.value)}
-            disabled={isPending}
-            placeholder="username または https://x.com/username"
-          />
-          {fieldErrors.x_username && (
-            <p className="mt-1 text-sm text-red-600">
-              {fieldErrors.x_username}
-            </p>
-          )}
-        </div>
-
-        {/* カスタム URL */}
-        <div>
-          <label
-            htmlFor="slug"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
-            カスタムURL
-          </label>
-          <Input
-            type="text"
-            id="slug"
-            name="slug"
-            value={currentSlug}
-            onChange={(e) => setCurrentSlug(e.target.value)}
-            maxLength={20}
-            disabled={isPending}
-            placeholder="my_name"
-          />
-          <p className="mt-1 text-xs text-gray-400">
-            英小文字で始まり、英小文字・数字・アンダースコアのみ、3〜20文字
-          </p>
-          {fieldErrors.slug && (
-            <p className="mt-1 text-sm text-red-600">{fieldErrors.slug}</p>
-          )}
-        </div>
-
-        {/* ボタン群 */}
-        <div className="flex gap-3 pt-2">
+    <div className="space-y-4">
+      <div className="mb-4 rounded-xl bg-gray-100 p-1 lg:hidden">
+        <div className="grid grid-cols-2 gap-1 text-sm font-medium">
           <button
-            type="submit"
-            disabled={isPending}
-            className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400"
+            type="button"
+            onClick={() => setMobilePane("preview")}
+            className={`rounded-lg px-3 py-2 transition ${
+              mobilePane === "preview"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600"
+            }`}
           >
-            {isPending ? "保存中..." : "保存する"}
+            プレビュー
           </button>
           <button
             type="button"
-            disabled={isPending}
-            onClick={handleCancel}
-            className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50"
+            onClick={() => setMobilePane("edit")}
+            className={`rounded-lg px-3 py-2 transition ${
+              mobilePane === "edit"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600"
+            }`}
           >
-            キャンセル
+            編集
           </button>
         </div>
-      </form>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section
+          className={mobilePane === "preview" ? "block" : "hidden lg:block"}
+        >
+          <ProfilePreviewCard
+            avatarUrl={avatarUrl}
+            previewDisplayName={previewDisplayName}
+            previewBio={previewBio}
+            normalizedPreviewXUsername={normalizedPreviewXUsername}
+            previewPath={previewPath}
+          />
+        </section>
+
+        <section
+          className={mobilePane === "edit" ? "block" : "hidden lg:block"}
+        >
+          <ProfileEditFields
+            savedMessage={savedMessage}
+            isDirty={isDirty}
+            isPending={isPending}
+            formAction={formAction}
+            originalDisplayName={originalDisplayName}
+            originalBio={originalBio}
+            originalXUsername={originalXUsername}
+            originalSlug={originalSlug}
+            currentDisplayName={currentDisplayName}
+            setCurrentDisplayName={setCurrentDisplayName}
+            currentBio={currentBio}
+            setCurrentBio={setCurrentBio}
+            currentXUsername={currentXUsername}
+            setCurrentXUsername={setCurrentXUsername}
+            currentSlug={currentSlug}
+            setCurrentSlug={setCurrentSlug}
+            fieldErrors={fieldErrors}
+            handleReset={handleReset}
+          />
+        </section>
+      </div>
     </div>
   );
 }
