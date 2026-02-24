@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { XIcon } from "@/components/icons/x-icon";
+import { SOCIAL_PLATFORMS } from "@/lib/social-platforms";
 import { createClient } from "@/lib/supabase/server";
 
 interface ProfileData {
@@ -8,7 +8,7 @@ interface ProfileData {
   display_name: string;
   avatar_url: string | null;
   bio: string | null;
-  x_username: string | null;
+  social_links: Record<string, string>;
   slug: string | null;
 }
 
@@ -38,7 +38,7 @@ export default async function ProfilePage({ params }: PageProps) {
   const profilePromise = isProfileId
     ? supabase
         .from("profiles")
-        .select("profile_id, display_name, avatar_url, bio, x_username, slug")
+        .select("profile_id, display_name, avatar_url, bio, social_links, slug")
         .eq("profile_id", profile_id)
         .single()
     : supabase.rpc("public_get_profile_by_slug", {
@@ -97,25 +97,39 @@ export default async function ProfilePage({ params }: PageProps) {
             </p>
           )}
 
-          {/* X (Twitter) リンクボタン */}
-          {profile.x_username && (
-            <div className="mt-8">
-              <p className="mb-2 text-center text-sm text-gray-500">
-                @{profile.x_username}
-              </p>
-              <a
-                href={`https://x.com/${profile.x_username}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-3 rounded-lg bg-black px-6 py-4 text-lg font-medium text-white transition hover:bg-gray-800 active:bg-gray-900"
-              >
-                <XIcon className="h-6 w-6" />X (Twitter) へ移動
-              </a>
+          {/* SNS リンクボタン */}
+          {SOCIAL_PLATFORMS.some((p) => profile.social_links[p.key]) ? (
+            <div className="mt-8 space-y-3">
+              {SOCIAL_PLATFORMS.map((platform) => {
+                const value = profile.social_links[platform.key];
+                if (!value) return null;
+                const url = platform.profileUrl?.(value) ?? null;
+                const Icon = platform.icon;
+                return (
+                  <div key={platform.key}>
+                    <p className="mb-2 text-center text-sm text-gray-500">
+                      @{value}
+                    </p>
+                    {url ? (
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex w-full items-center justify-center gap-3 rounded-lg px-6 py-4 text-lg font-medium text-white transition ${platform.buttonClass ?? "bg-gray-700 hover:bg-gray-600"}`}
+                      >
+                        {Icon && <Icon className="h-6 w-6" />}
+                        {platform.label} へ移動
+                      </a>
+                    ) : (
+                      <p className="text-center text-base font-medium text-gray-700">
+                        {value}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          )}
-
-          {/* x_usernameがnullの場合の表示 */}
-          {!profile.x_username && (
+          ) : (
             <div className="mt-8 text-center text-sm text-gray-500">
               SNSリンクは未設定です
             </div>

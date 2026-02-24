@@ -5,13 +5,13 @@
  * 入力中の値を受け取り、公開プロフィールの見た目を左ペインに描画する。
  */
 import Image from "next/image";
-import { XIcon } from "@/components/icons/x-icon";
+import { SOCIAL_PLATFORMS } from "@/lib/social-platforms";
 
 interface ProfilePreviewCardProps {
   avatarUrl: string | null;
   previewDisplayName: string;
   previewBio: string;
-  normalizedPreviewXUsername: string | null;
+  previewSocialLinks: Record<string, string>;
   previewPath: string;
 }
 
@@ -19,7 +19,7 @@ export function ProfilePreviewCard({
   avatarUrl,
   previewDisplayName,
   previewBio,
-  normalizedPreviewXUsername,
+  previewSocialLinks,
   previewPath,
 }: ProfilePreviewCardProps) {
   return (
@@ -69,19 +69,36 @@ export function ProfilePreviewCard({
         </p>
       )}
 
-      {normalizedPreviewXUsername ? (
-        <div className="mt-8">
-          <p className="mb-2 text-center text-sm text-gray-500">
-            @{normalizedPreviewXUsername}
-          </p>
-          <a
-            href={`https://x.com/${normalizedPreviewXUsername}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-3 rounded-lg bg-black px-6 py-4 text-lg font-medium text-white transition hover:bg-gray-800 active:bg-gray-900"
-          >
-            <XIcon className="h-6 w-6" />X (Twitter) へ移動
-          </a>
+      {SOCIAL_PLATFORMS.some((p) => previewSocialLinks[p.key]) ? (
+        <div className="mt-8 space-y-3">
+          {SOCIAL_PLATFORMS.map((platform) => {
+            const value = previewSocialLinks[platform.key];
+            if (!value) return null;
+            const url = platform.profileUrl?.(value) ?? null;
+            const Icon = platform.icon;
+            return (
+              <div key={platform.key}>
+                <p className="mb-2 text-center text-sm text-gray-500">
+                  @{value}
+                </p>
+                {url ? (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`flex w-full items-center justify-center gap-3 rounded-lg px-6 py-4 text-lg font-medium text-white transition ${platform.buttonClass ?? "bg-gray-700 hover:bg-gray-600"}`}
+                  >
+                    {Icon && <Icon className="h-6 w-6" />}
+                    {platform.label} へ移動
+                  </a>
+                ) : (
+                  <p className="text-center text-base font-medium text-gray-700">
+                    {value}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="mt-8 text-center text-sm text-gray-500">

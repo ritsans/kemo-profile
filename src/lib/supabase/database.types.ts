@@ -59,8 +59,8 @@ export type Database = {
           owner_user_id: string;
           profile_id: string;
           slug: string | null;
+          social_links: Json;
           updated_at: string;
-          x_username: string | null;
         };
         Insert: {
           avatar_url?: string | null;
@@ -71,8 +71,8 @@ export type Database = {
           owner_user_id: string;
           profile_id: string;
           slug?: string | null;
+          social_links?: Json;
           updated_at?: string;
-          x_username?: string | null;
         };
         Update: {
           avatar_url?: string | null;
@@ -83,8 +83,8 @@ export type Database = {
           owner_user_id?: string;
           profile_id?: string;
           slug?: string | null;
+          social_links?: Json;
           updated_at?: string;
-          x_username?: string | null;
         };
         Relationships: [];
       };
@@ -100,7 +100,7 @@ export type Database = {
           bio: string;
           display_name: string;
           profile_id: string;
-          x_username: string;
+          social_links: Json;
         }[];
       };
       public_get_profile_by_slug: {
@@ -111,7 +111,7 @@ export type Database = {
           display_name: string;
           profile_id: string;
           slug: string;
-          x_username: string;
+          social_links: Json;
         }[];
       };
     };

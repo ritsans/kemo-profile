@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { isUniqueViolation } from "@/lib/errors/supabase";
+import { SOCIAL_PLATFORMS } from "@/lib/social-platforms";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult, ProfileUpdateResult } from "@/lib/types/action";
-import { normalizeXUsername } from "@/lib/utils/x-username";
 
 const SLUG_REGEX = /^[a-z][a-z0-9_]{2,19}$/;
 const UPDATE_ERROR_MESSAGE = "更新に失敗しました。もう一度お試しください";
@@ -40,7 +40,7 @@ async function updateProfileAndRevalidate(
   update: {
     display_name?: string;
     bio?: string | null;
-    x_username?: string | null;
+    social_links?: Record<string, string>;
     slug?: string | null;
     onboarding_completed?: boolean;
   },
@@ -184,15 +184,13 @@ export async function completeOnboarding(): Promise<ActionResult> {
 
 /**
  * プロフィール一括更新 Server Action
- * display_name, bio, x_username, slug を一度に更新する
+ * display_name, bio, social_links, slug を一度に更新する
  */
 export async function updateProfile(
   _prevState: ProfileUpdateResult | null,
   formData: FormData,
 ): Promise<ProfileUpdateResult> {
-  const fieldErrors: Partial<
-    Record<"display_name" | "bio" | "x_username" | "slug", string>
-  > = {};
+  const fieldErrors: Record<string, string> = {};
 
   // --- display_name バリデーション ---
   const displayNameRaw = formData.get("display_name");
@@ -211,17 +209,21 @@ export async function updateProfile(
     fieldErrors.bio = "自己紹介は160文字以内で入力してください";
   }
 
-  // --- x_username 正規化・バリデーション ---
-  const xUsernameRaw = formData.get("x_username");
-  const xUsernameInput =
-    typeof xUsernameRaw === "string" ? xUsernameRaw.trim() : "";
-  let normalizedXUsername: string | null = null;
-  if (xUsernameInput.length > 0) {
-    const result = normalizeXUsername(xUsernameInput);
-    if (!result.ok) {
-      fieldErrors.x_username = result.error;
+  // --- social_links 正規化・バリデーション ---
+  const socialLinksNew: Record<string, string> = {};
+  for (const platform of SOCIAL_PLATFORMS) {
+    const raw = formData.get(`social_${platform.key}`);
+    const input = typeof raw === "string" ? raw.trim() : "";
+    if (input.length === 0) continue;
+    if (platform.normalize) {
+      const result = platform.normalize(input);
+      if (!result.ok) {
+        fieldErrors[`social_${platform.key}`] = result.error;
+      } else {
+        socialLinksNew[platform.key] = result.value;
+      }
     } else {
-      normalizedXUsername = result.value;
+      socialLinksNew[platform.key] = input;
     }
   }
 
@@ -256,14 +258,20 @@ export async function updateProfile(
   const originalDisplayName =
     (formData.get("original_display_name") as string) ?? "";
   const originalBio = (formData.get("original_bio") as string) ?? "";
-  const originalXUsername =
-    (formData.get("original_x_username") as string) ?? "";
   const originalSlug = (formData.get("original_slug") as string) ?? "";
+
+  // social_links の元の値をプラットフォームごとに収集
+  const originalSocialLinks: Record<string, string> = {};
+  for (const platform of SOCIAL_PLATFORMS) {
+    const orig =
+      (formData.get(`original_social_${platform.key}`) as string) ?? "";
+    if (orig.length > 0) originalSocialLinks[platform.key] = orig;
+  }
 
   const update: Partial<{
     display_name: string;
     bio: string | null;
-    x_username: string | null;
+    social_links: Record<string, string>;
     slug: string | null;
   }> = {};
 
@@ -271,8 +279,11 @@ export async function updateProfile(
   if ((bioTrimmed || null) !== (originalBio || null)) {
     update.bio = bioTrimmed.length > 0 ? bioTrimmed : null;
   }
-  if (normalizedXUsername !== (originalXUsername || null))
-    update.x_username = normalizedXUsername;
+  if (
+    JSON.stringify(socialLinksNew) !== JSON.stringify(originalSocialLinks)
+  ) {
+    update.social_links = socialLinksNew;
+  }
   if (normalizedSlug !== (originalSlug || null)) update.slug = normalizedSlug;
 
   // 変更なし → DB更新・revalidate不要

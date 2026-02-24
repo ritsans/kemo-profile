@@ -31,14 +31,16 @@ export async function ensureProfile(
 
   let displayName: string;
   let avatarUrl: string | null = null;
-  let xUsername: string | null = null;
+  const socialLinks: Record<string, string> = {};
 
   if (provider === "email" || !provider) {
     displayName = user.email?.split("@")[0] || "名無しのけもの";
   } else {
     displayName = metadata.full_name || metadata.name || "名無しのけもの";
     avatarUrl = metadata.avatar_url || metadata.picture || null;
-    xUsername = provider === "twitter" ? metadata.user_name || null : null;
+    if (provider === "twitter" && metadata.user_name) {
+      socialLinks.x = metadata.user_name;
+    }
   }
 
   const { error: insertError } = await supabase.from("profiles").insert({
@@ -46,7 +48,7 @@ export async function ensureProfile(
     owner_user_id: user.id,
     display_name: displayName,
     avatar_url: avatarUrl,
-    x_username: xUsername,
+    social_links: socialLinks,
   });
 
   if (insertError) {

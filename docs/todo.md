@@ -104,6 +104,47 @@ Design doc: `docs/plans/2026-02-14-mypage-edit-interface-design.md`
 
 ---
 
+## 11. SNSリンク JSONB 移行
+
+Design doc: `docs/plans/2026-02-23-social-links-jsonb-design.md`
+
+### 11.1 プラットフォーム定義
+
+- [x] `src/lib/social-platforms.ts` 作成
+  - `SocialPlatform` インターフェース定義
+  - `SOCIAL_PLATFORMS` 配列（X のみ初期登録）
+  - `getPlatform(key)` ヘルパー関数
+
+### 11.2 DB マイグレーション（手動）
+
+- [x] `profiles.social_links JSONB NOT NULL DEFAULT '{}'` カラム追加
+- [x] `x_username` → `social_links.x` データ移行
+- [x] `public_get_profile` RPC の戻り値を `social_links jsonb` に更新
+- [x] `public_get_profile_by_slug` RPC の戻り値を `social_links jsonb` に更新
+
+### 11.3 型定義・アクション
+
+- [x] `src/lib/supabase/database.types.ts` 更新（`social_links: Json` 追加）
+- [x] `src/lib/types/action.ts` 更新（`fieldErrors` から `x_username` 固定キー削除）
+- [x] `src/app/actions/profile.ts` 更新（`x_username` 処理 → `SOCIAL_PLATFORMS` ループ）
+- [x] `src/app/auth/callback/_lib/profile.ts` 更新（`social_links` で insert）
+
+### 11.4 UI
+
+- [x] `src/app/mypage/edit-form.tsx` 更新（状態を `socialLinks` に置き換え）
+- [x] `src/app/mypage/profile-edit-fields.tsx` 更新（入力フィールドをループ描画）
+- [x] `src/app/mypage/profile-preview-card.tsx` 更新（プレビューをループ描画）
+- [x] `src/app/mypage/page.tsx` 更新（`social_links` を SELECT・prop に変更）
+- [x] `src/app/p/[profile_id]/page.tsx` 更新（SNSリンクをループ描画）
+
+### 11.5 残作業（フェーズ2）
+
+- [x] `x_username` カラム DROP（アプリ動作確認後）
+  - `database.types.ts` から `x_username` を削除
+  - `profiles.Update` / `Insert` / `Row` の `x_username` を削除
+
+---
+
 ## Completion Criteria
 
 - [ ] Users can log in via Google/X OAuth

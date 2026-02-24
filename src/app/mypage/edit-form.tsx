@@ -6,27 +6,37 @@
  */
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { updateProfile } from "@/app/actions/profile";
+import { SOCIAL_PLATFORMS } from "@/lib/social-platforms";
 import type { ProfileUpdateResult } from "@/lib/types/action";
-import { normalizeXUsername } from "@/lib/utils/x-username";
 import { ProfileEditFields } from "./profile-edit-fields";
 import { ProfilePreviewCard } from "./profile-preview-card";
 
 interface ProfileEditFormProps {
   displayName: string;
   bio: string | null;
-  xUsername: string | null;
+  socialLinks: Record<string, string>;
   slug: string | null;
   avatarUrl: string | null;
   previewPath: string;
+  lockedSocialKeys: string[];
+}
+
+function initSocialLinksState(socialLinks: Record<string, string>) {
+  const result: Record<string, string> = {};
+  for (const p of SOCIAL_PLATFORMS) {
+    result[p.key] = socialLinks[p.key] ?? "";
+  }
+  return result;
 }
 
 export function ProfileEditForm({
   displayName,
   bio,
-  xUsername,
+  socialLinks,
   slug,
   avatarUrl,
   previewPath,
+  lockedSocialKeys,
 }: ProfileEditFormProps) {
   const [mobilePane, setMobilePane] = useState<"preview" | "edit">("preview");
   const [savedMessage, setSavedMessage] = useState(false);
@@ -34,13 +44,17 @@ export function ProfileEditForm({
   // フォーム内の現在値
   const [currentDisplayName, setCurrentDisplayName] = useState(displayName);
   const [currentBio, setCurrentBio] = useState(bio ?? "");
-  const [currentXUsername, setCurrentXUsername] = useState(xUsername ?? "");
+  const [currentSocialLinks, setCurrentSocialLinks] = useState(() =>
+    initSocialLinksState(socialLinks),
+  );
   const [currentSlug, setCurrentSlug] = useState(slug ?? "");
 
   // 差分検知用の基準値（最後に保存された値）
   const [originalDisplayName, setOriginalDisplayName] = useState(displayName);
   const [originalBio, setOriginalBio] = useState(bio ?? "");
-  const [originalXUsername, setOriginalXUsername] = useState(xUsername ?? "");
+  const [originalSocialLinks, setOriginalSocialLinks] = useState(() =>
+    initSocialLinksState(socialLinks),
+  );
   const [originalSlug, setOriginalSlug] = useState(slug ?? "");
 
   const [state, formAction, isPending] = useActionState<
@@ -48,12 +62,25 @@ export function ProfileEditForm({
     FormData
   >(updateProfile, null);
 
-  const normalizedPreviewXUsername = useMemo(() => {
-    const input = currentXUsername.trim();
-    if (input.length === 0) return null;
-    const normalized = normalizeXUsername(input);
-    return normalized.ok ? normalized.value : null;
-  }, [currentXUsername]);
+  // プレビュー用: 正規化済み social_links（バリデーション失敗はスキップ）
+  const previewSocialLinks = useMemo(() => {
+    const result: Record<string, string> = {};
+    for (const platform of SOCIAL_PLATFORMS) {
+      const input = currentSocialLinks[platform.key]?.trim() ?? "";
+      if (!input) continue;
+      if (platform.normalize) {
+        const normalized = platform.normalize(input);
+        if (normalized.ok) result[platform.key] = normalized.value;
+      } else {
+        result[platform.key] = input;
+      }
+    }
+    return result;
+  }, [currentSocialLinks]);
+
+  function setSocialLinkValue(key: string, value: string) {
+    setCurrentSocialLinks((prev) => ({ ...prev, [key]: value }));
+  }
 
   // 保存成功時: 基準値更新＆保存完了メッセージ表示
   useEffect(() => {
@@ -61,37 +88,46 @@ export function ProfileEditForm({
       const nextDisplayName = currentDisplayName.trim();
       const nextBio = currentBio.trim();
       const nextSlug = currentSlug.trim();
-      const nextXInput = currentXUsername.trim();
-      const nextXNormalized =
-        nextXInput.length === 0
-          ? ""
-          : (() => {
-              const normalized = normalizeXUsername(nextXInput);
-              return normalized.ok ? normalized.value : nextXInput;
-            })();
+
+      // social_links: 正規化して保存
+      const nextSocialLinks: Record<string, string> = {};
+      for (const platform of SOCIAL_PLATFORMS) {
+        const input = currentSocialLinks[platform.key]?.trim() ?? "";
+        if (!input) continue;
+        if (platform.normalize) {
+          const r = platform.normalize(input);
+          nextSocialLinks[platform.key] = r.ok ? r.value : input;
+        } else {
+          nextSocialLinks[platform.key] = input;
+        }
+      }
 
       setCurrentDisplayName(nextDisplayName);
       setCurrentBio(nextBio);
+      setCurrentSocialLinks(nextSocialLinks);
       setCurrentSlug(nextSlug);
-      setCurrentXUsername(nextXNormalized);
 
       setOriginalDisplayName(nextDisplayName);
       setOriginalBio(nextBio);
+      setOriginalSocialLinks(nextSocialLinks);
       setOriginalSlug(nextSlug);
-      setOriginalXUsername(nextXNormalized);
 
       setSavedMessage(true);
       const timer = setTimeout(() => setSavedMessage(false), 2000);
       return () => clearTimeout(timer);
     }
-  }, [state, currentDisplayName, currentBio, currentSlug, currentXUsername]);
+  }, [state, currentDisplayName, currentBio, currentSocialLinks, currentSlug]);
 
   // dirty チェック
   const isDirty =
     currentDisplayName !== originalDisplayName ||
     currentBio !== originalBio ||
-    currentXUsername !== originalXUsername ||
-    currentSlug !== originalSlug;
+    currentSlug !== originalSlug ||
+    SOCIAL_PLATFORMS.some(
+      (p) =>
+        (currentSocialLinks[p.key] ?? "") !==
+        (originalSocialLinks[p.key] ?? ""),
+    );
 
   // ブラウザ離脱保護（未保存の場合）
   useEffect(() => {
@@ -111,7 +147,7 @@ export function ProfileEditForm({
     }
     setCurrentDisplayName(originalDisplayName);
     setCurrentBio(originalBio);
-    setCurrentXUsername(originalXUsername);
+    setCurrentSocialLinks(originalSocialLinks);
     setCurrentSlug(originalSlug);
   };
 
@@ -158,7 +194,7 @@ export function ProfileEditForm({
             avatarUrl={avatarUrl}
             previewDisplayName={previewDisplayName}
             previewBio={previewBio}
-            normalizedPreviewXUsername={normalizedPreviewXUsername}
+            previewSocialLinks={previewSocialLinks}
             previewPath={previewPath}
           />
         </section>
@@ -173,18 +209,19 @@ export function ProfileEditForm({
             formAction={formAction}
             originalDisplayName={originalDisplayName}
             originalBio={originalBio}
-            originalXUsername={originalXUsername}
+            originalSocialLinks={originalSocialLinks}
             originalSlug={originalSlug}
             currentDisplayName={currentDisplayName}
             setCurrentDisplayName={setCurrentDisplayName}
             currentBio={currentBio}
             setCurrentBio={setCurrentBio}
-            currentXUsername={currentXUsername}
-            setCurrentXUsername={setCurrentXUsername}
+            currentSocialLinks={currentSocialLinks}
+            setSocialLinkValue={setSocialLinkValue}
             currentSlug={currentSlug}
             setCurrentSlug={setCurrentSlug}
             fieldErrors={fieldErrors}
             handleReset={handleReset}
+            lockedSocialKeys={lockedSocialKeys}
           />
         </section>
       </div>

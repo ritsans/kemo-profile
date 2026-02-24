@@ -34,7 +34,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "profile_id, display_name, avatar_url, bio, x_username, slug, onboarding_completed",
+      "profile_id, display_name, avatar_url, bio, social_links, slug, onboarding_completed",
     )
     .eq("owner_user_id", user.id)
     .single();
@@ -65,6 +65,13 @@ export default async function MyPage({ searchParams }: MyPageProps) {
   // slug の初期値候補を生成（既存の slug がない場合）
   const suggestedSlug = profile.slug || generateSuggestedSlug(user);
 
+  // X OAuth 連携済みの場合は X 欄を編集不可にする
+  const lockedSocialKeys = user.identities?.some(
+    (i) => i.provider === "twitter",
+  )
+    ? ["x"]
+    : [];
+
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 sm:py-8">
       <div className="mx-auto max-w-6xl">
@@ -83,10 +90,11 @@ export default async function MyPage({ searchParams }: MyPageProps) {
           <ProfileEditForm
             displayName={profile.display_name}
             bio={profile.bio}
-            xUsername={profile.x_username}
+            socialLinks={(profile.social_links ?? {}) as Record<string, string>}
             slug={suggestedSlug}
             avatarUrl={profile.avatar_url}
             previewPath={profilePath}
+            lockedSocialKeys={lockedSocialKeys}
           />
         </div>
 

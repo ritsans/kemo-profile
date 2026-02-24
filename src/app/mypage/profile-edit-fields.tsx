@@ -5,10 +5,7 @@
  * 右ペインの入力UIとエラー表示のみを担当する。
  */
 import { Input, Textarea } from "@/components/ui/input";
-
-type ProfileFieldErrors = Partial<
-  Record<"display_name" | "bio" | "x_username" | "slug", string>
->;
+import { SOCIAL_PLATFORMS } from "@/lib/social-platforms";
 
 interface ProfileEditFieldsProps {
   savedMessage: boolean;
@@ -17,18 +14,19 @@ interface ProfileEditFieldsProps {
   formAction: (formData: FormData) => void | Promise<void>;
   originalDisplayName: string;
   originalBio: string;
-  originalXUsername: string;
+  originalSocialLinks: Record<string, string>;
   originalSlug: string;
   currentDisplayName: string;
   setCurrentDisplayName: (value: string) => void;
   currentBio: string;
   setCurrentBio: (value: string) => void;
-  currentXUsername: string;
-  setCurrentXUsername: (value: string) => void;
+  currentSocialLinks: Record<string, string>;
+  setSocialLinkValue: (key: string, value: string) => void;
   currentSlug: string;
   setCurrentSlug: (value: string) => void;
-  fieldErrors: ProfileFieldErrors;
+  fieldErrors: Record<string, string>;
   handleReset: () => void;
+  lockedSocialKeys: string[];
 }
 
 export function ProfileEditFields({
@@ -38,18 +36,19 @@ export function ProfileEditFields({
   formAction,
   originalDisplayName,
   originalBio,
-  originalXUsername,
+  originalSocialLinks,
   originalSlug,
   currentDisplayName,
   setCurrentDisplayName,
   currentBio,
   setCurrentBio,
-  currentXUsername,
-  setCurrentXUsername,
+  currentSocialLinks,
+  setSocialLinkValue,
   currentSlug,
   setCurrentSlug,
   fieldErrors,
   handleReset,
+  lockedSocialKeys,
 }: ProfileEditFieldsProps) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -73,11 +72,14 @@ export function ProfileEditFields({
           value={originalDisplayName}
         />
         <input type="hidden" name="original_bio" value={originalBio} />
-        <input
-          type="hidden"
-          name="original_x_username"
-          value={originalXUsername}
-        />
+        {SOCIAL_PLATFORMS.map((platform) => (
+          <input
+            key={platform.key}
+            type="hidden"
+            name={`original_social_${platform.key}`}
+            value={originalSocialLinks[platform.key] ?? ""}
+          />
+        ))}
         <input type="hidden" name="original_slug" value={originalSlug} />
 
         <div>
@@ -131,28 +133,40 @@ export function ProfileEditFields({
           )}
         </div>
 
-        <div>
-          <label
-            htmlFor="x_username"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
-            X (Twitter) ユーザー名
-          </label>
-          <Input
-            type="text"
-            id="x_username"
-            name="x_username"
-            value={currentXUsername}
-            onChange={(e) => setCurrentXUsername(e.target.value)}
-            disabled={isPending}
-            placeholder="username または https://x.com/username"
-          />
-          {fieldErrors.x_username && (
-            <p className="mt-1 text-sm text-red-600">
-              {fieldErrors.x_username}
-            </p>
-          )}
-        </div>
+        {SOCIAL_PLATFORMS.map((platform) => {
+          const isLocked = lockedSocialKeys.includes(platform.key);
+          return (
+            <div key={platform.key}>
+              <label
+                htmlFor={`social_${platform.key}`}
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                {platform.label}
+              </label>
+              <Input
+                type="text"
+                id={`social_${platform.key}`}
+                name={`social_${platform.key}`}
+                value={currentSocialLinks[platform.key] ?? ""}
+                onChange={(e) =>
+                  setSocialLinkValue(platform.key, e.target.value)
+                }
+                disabled={isPending || isLocked}
+                placeholder={platform.placeholder}
+              />
+              {isLocked && (
+                <p className="mt-1 text-xs text-gray-400">
+                  OAuth連携で自動設定されています
+                </p>
+              )}
+              {fieldErrors[`social_${platform.key}`] && (
+                <p className="mt-1 text-sm text-red-600">
+                  {fieldErrors[`social_${platform.key}`]}
+                </p>
+              )}
+            </div>
+          );
+        })}
 
         <div>
           <label

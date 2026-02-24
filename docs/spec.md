@@ -104,6 +104,7 @@ kemono-profileは、同人イベント・オフ会などで会った相手と「
 - X OAuthでログインしたユーザーは`social_links.x`が自動設定される
 - Google OAuthでログインしたユーザーは`social_links`が空のままプロフィールが作成される
 - SNSリンクが未設定のユーザーは、編集画面（`/edit`）で後から追加できる
+- **X OAuthでログインしたユーザーは、編集画面（`/mypage`）でX欄が編集不可（disabled）になる**。認証プロバイダーと紐づいた値のため手動変更を禁止し、「OAuth連携で自動設定されています」のヒントテキストを表示する
 
 ---
 
@@ -268,7 +269,7 @@ DBマイグレーションやServer Actionの修正は不要。
   * `bio`: 自己紹介文（任意、最大160文字）
   * `slug`: カスタムURL識別子（任意、3-20文字、ユニーク制約）
   * `onboarding_completed`: オンボーディング完了フラグ（デフォルト false）
-  * ~~`x_username`~~: **廃止予定** — `social_links.x` に移行。移行完了後にカラム削除
+  * ~~`x_username`~~: **廃止済み（カラム削除待ち）** — `social_links.x` への移行完了（フェーズ1）。カラムはDBに残存中。動作確認後に DROP 予定（フェーズ2）
 * `bookmarks(user_id, profile_id, deleted_at, created_at, updated_at)`
   * 一意制約：`(user_id, profile_id)`
 

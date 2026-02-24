@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 
 const INPUT_CLASS =
-  "w-full rounded-lg border border-gray-200 bg-gray-50/60 px-4 py-3 text-[15px] text-gray-900 placeholder:text-gray-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-gray-100";
+  "w-full rounded-lg border border-gray-200 bg-gray-50/60 px-4 py-3 text-[15px] text-gray-900 placeholder:text-gray-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-gray-100 disabled:cursor-not-allowed";
 
 export const Input = forwardRef<
   HTMLInputElement,

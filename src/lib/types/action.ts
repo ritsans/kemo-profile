@@ -15,6 +15,7 @@ export type ProfileUpdateResult =
   | {
       success: false;
       fieldErrors: Partial<
-        Record<"display_name" | "bio" | "x_username" | "slug", string>
+        Record<"display_name" | "bio" | "slug", string> &
+          Record<string, string>
       >;
     };
