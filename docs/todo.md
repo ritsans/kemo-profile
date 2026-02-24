@@ -151,58 +151,66 @@ Design doc: `docs/plans/2026-02-24-social-link-step-add-flow-plan.md`
 
 ### 12.1 正規化ユーティリティ
 
-- [ ] `src/lib/utils/instagram-username.ts` 作成 [New]
+- [x] `src/lib/utils/instagram-username.ts` 作成 [New]
   - 許容入力: `username`, `@username`, `https://instagram.com/username`
   - 保存値: `username`
-- [ ] `src/lib/utils/pixiv-user-id.ts` 作成 [New]
+- [x] `src/lib/utils/pixiv-user-id.ts` 作成 [New]
   - 許容入力: `12345678`, `https://www.pixiv.net/users/12345678`
   - 保存値: `12345678`（数値IDのみ）
 
 ### 12.2 プラットフォーム定義拡張
 
-- [ ] `src/lib/social-platforms.ts` に Instagram / Pixiv 定義を追加
+- [x] `src/lib/social-platforms.ts` に Instagram / Pixiv 定義を追加
   - `key`, `label`, `normalize`, `profileUrl`, `placeholder`, `buttonClass` を設定
 
 ### 12.3 Server Actions 再設計（責務分離）
 
-- [ ] `src/app/actions/profile.ts` — `updateProfile` から `social_links` 処理を削除
+- [x] `src/app/actions/profile.ts` — `updateProfile` から `social_links` 処理を削除
   - `socialLinksNew` の抽出・正規化ループを削除
   - `originalSocialLinks` の差分検知を削除
   - `update.social_links` の設定を削除
-- [ ] `addSocialLink(platformKey, rawValue)` Server Action 追加
+- [x] `addSocialLink(platformKey, rawValue)` Server Action 追加
   - 認証 → platform 定義確認 → normalize → 重複チェック → DB更新 → revalidatePath
-- [ ] `removeSocialLink(platformKey)` Server Action 追加
-  - 認証 → 既存 social_links 取得 → キー削除 → DB更新 → revalidatePath
+- [x] `updateSocialLink(platformKey, rawValue)` Server Action 追加
+  - 認証 → X保護 → normalize → 既存チェック → DB更新 → revalidatePath
+- [x] `removeSocialLink(platformKey)` Server Action 追加
+  - 認証 → X保護 → 既存 social_links 取得 → キー削除 → DB更新 → revalidatePath
 
 ### 12.4 モーダルコンポーネント
 
-- [ ] `src/app/mypage/add-social-link-modal.tsx` 作成 [New]
+- [x] `src/app/mypage/add-social-link-modal.tsx` 作成 [New]
   - Step 1: 未追加SNS選択（`SOCIAL_PLATFORMS` から `existingKeys` を除外した一覧）
   - Step 2: ユーザー名/ID入力 + URLプレビュー表示
   - ボタン: `保存して追加` / `戻る` / `キャンセル`
-  - 保存成功後: `onAdded(key, value)` 呼び出し → `onClose()` でモーダルを閉じる
+  - 保存成功後: `onSaved(key, value)` 呼び出し → `onClose()` でモーダルを閉じる
   - エラー時: フィールド下にメッセージ表示、モーダルは閉じない
+  - edit モード対応（Step1 をスキップ）
 
 ### 12.5 編集UIの改修
 
-- [ ] `src/app/mypage/profile-edit-fields.tsx` 変更
+- [x] `src/app/mypage/profile-edit-fields.tsx` 変更
   - `SOCIAL_PLATFORMS.map()` の全プラットフォーム入力ループを削除
-  - 追加済みSNSのみ表示するループに置き換え（各行に削除ボタン）
+  - 追加済みSNSのみ表示するループに置き換え（各行に編集・削除ボタン）
   - ロック済み（`lockedSocialKeys`）は削除ボタンを非表示
   - フォーム下部に `+ リンクを追加` ボタン追加（0件でも常に表示）
   - 0件の場合は「SNSリンクはまだ登録されていません」を表示
-  - Props から `originalSocialLinks`, `setSocialLinkValue` を削除、`onRemoveSocialLink`, `onAddSocialLinkClick` を追加
-- [ ] `src/app/mypage/edit-form.tsx` 変更
+  - Props から `originalSocialLinks`, `setSocialLinkValue` を削除、`onRemoveSocialLink`, `onAddSocialLinkClick`, `onEditSocialLinkClick` を追加
+- [x] `src/app/mypage/edit-form.tsx` 変更
   - `initSocialLinksState`（全プラットフォーム初期化）を削除
   - `currentSocialLinks` を `socialLinks` prop から直接初期化
   - `isDirty` から social_links の差分チェックを削除
-  - `previewSocialLinks` を `currentSocialLinks`（正規化済み）からそのまま生成するよう変更
-  - `isAddModalOpen` 状態と `handleSocialLinkAdded` / `handleSocialLinkRemoved` ハンドラを追加
-  - `AddSocialLinkModal` をレンダリング
+  - `previewSocialLinks` を `currentSocialLinks` からそのまま渡すよう変更
+  - `isAddModalOpen` / `editModalKey` 状態と各ハンドラを追加
+  - `AddSocialLinkModal` をレンダリング（add/edit 両モード）
 
 ### 12.6 検証
 
-- [ ] Biome lint チェックを通過
+- [x] Biome lint チェックを通過
+- [x] カスタムURL設定をプロフィール編集フォームから独立カード（`SlugCard`）へ分離
+  - `src/app/mypage/slug-card.tsx` 新規作成
+  - `profile-edit-fields.tsx`, `edit-form.tsx` から slug 関連削除
+  - `updateProfile` から slug バリデーション・差分検知・DB更新を削除
+  - `page.tsx` に `<SlugCard slug={suggestedSlug} />` を配置
 - [ ] 動作確認
   - `+ リンクを追加` ボタンでモーダルが開く
   - 未追加SNSのみ選択肢に表示される

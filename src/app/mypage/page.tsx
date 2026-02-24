@@ -7,6 +7,7 @@ import { generateSuggestedSlug } from "@/lib/utils/slug";
 import { ProfileEditForm } from "./edit-form";
 import { LinkedProvidersCard } from "./linked-providers-card";
 import { ShareSection } from "./share-section";
+import { SlugCard } from "./slug-card";
 
 interface MyPageProps {
   searchParams: Promise<{ error?: string; error_description?: string }>;
@@ -91,7 +92,6 @@ export default async function MyPage({ searchParams }: MyPageProps) {
             displayName={profile.display_name}
             bio={profile.bio}
             socialLinks={(profile.social_links ?? {}) as Record<string, string>}
-            slug={suggestedSlug}
             avatarUrl={profile.avatar_url}
             previewPath={profilePath}
             lockedSocialKeys={lockedSocialKeys}
@@ -103,6 +103,10 @@ export default async function MyPage({ searchParams }: MyPageProps) {
             <ShareSection profileUrl={profileUrl} />
           </div>
           <LinkedProvidersCard identities={user.identities} />
+        </div>
+
+        <div className="mb-6">
+          <SlugCard slug={suggestedSlug} />
         </div>
 
         {/* ログアウトボタン */}

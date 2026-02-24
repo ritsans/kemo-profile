@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { isUniqueViolation } from "@/lib/errors/supabase";
-import { SOCIAL_PLATFORMS } from "@/lib/social-platforms";
+import { getPlatform } from "@/lib/social-platforms";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult, ProfileUpdateResult } from "@/lib/types/action";
 
@@ -40,7 +40,7 @@ async function updateProfileAndRevalidate(
   update: {
     display_name?: string;
     bio?: string | null;
-    social_links?: Record<string, string>;
+    social_links?: Record<string, string> | null;
     slug?: string | null;
     onboarding_completed?: boolean;
   },
@@ -209,37 +209,6 @@ export async function updateProfile(
     fieldErrors.bio = "自己紹介は160文字以内で入力してください";
   }
 
-  // --- social_links 正規化・バリデーション ---
-  const socialLinksNew: Record<string, string> = {};
-  for (const platform of SOCIAL_PLATFORMS) {
-    const raw = formData.get(`social_${platform.key}`);
-    const input = typeof raw === "string" ? raw.trim() : "";
-    if (input.length === 0) continue;
-    if (platform.normalize) {
-      const result = platform.normalize(input);
-      if (!result.ok) {
-        fieldErrors[`social_${platform.key}`] = result.error;
-      } else {
-        socialLinksNew[platform.key] = result.value;
-      }
-    } else {
-      socialLinksNew[platform.key] = input;
-    }
-  }
-
-  // --- slug バリデーション ---
-  const slugRaw = formData.get("slug");
-  const slugTrimmed = typeof slugRaw === "string" ? slugRaw.trim() : "";
-  let normalizedSlug: string | null = null;
-  if (slugTrimmed.length > 0) {
-    if (!SLUG_REGEX.test(slugTrimmed)) {
-      fieldErrors.slug =
-        "英小文字で始まり、英小文字・数字・アンダースコアのみ、3〜20文字で入力してください";
-    } else {
-      normalizedSlug = slugTrimmed;
-    }
-  }
-
   // バリデーションエラーがあれば一括返却
   if (Object.keys(fieldErrors).length > 0) {
     return { success: false, fieldErrors };
@@ -258,33 +227,16 @@ export async function updateProfile(
   const originalDisplayName =
     (formData.get("original_display_name") as string) ?? "";
   const originalBio = (formData.get("original_bio") as string) ?? "";
-  const originalSlug = (formData.get("original_slug") as string) ?? "";
-
-  // social_links の元の値をプラットフォームごとに収集
-  const originalSocialLinks: Record<string, string> = {};
-  for (const platform of SOCIAL_PLATFORMS) {
-    const orig =
-      (formData.get(`original_social_${platform.key}`) as string) ?? "";
-    if (orig.length > 0) originalSocialLinks[platform.key] = orig;
-  }
 
   const update: Partial<{
     display_name: string;
     bio: string | null;
-    social_links: Record<string, string>;
-    slug: string | null;
   }> = {};
 
   if (displayName !== originalDisplayName) update.display_name = displayName;
   if ((bioTrimmed || null) !== (originalBio || null)) {
     update.bio = bioTrimmed.length > 0 ? bioTrimmed : null;
   }
-  if (
-    JSON.stringify(socialLinksNew) !== JSON.stringify(originalSocialLinks)
-  ) {
-    update.social_links = socialLinksNew;
-  }
-  if (normalizedSlug !== (originalSlug || null)) update.slug = normalizedSlug;
 
   // 変更なし → DB更新・revalidate不要
   if (Object.keys(update).length === 0) {
@@ -299,12 +251,6 @@ export async function updateProfile(
 
   if (error) {
     console.error("Profile bulk update error:", error);
-    if (isUniqueViolation(error)) {
-      return {
-        success: false,
-        fieldErrors: { slug: "このURLは既に使用されています" },
-      };
-    }
     return {
       success: false,
       fieldErrors: { display_name: UPDATE_ERROR_MESSAGE },
@@ -313,4 +259,204 @@ export async function updateProfile(
 
   revalidatePath("/mypage");
   return { success: true };
+}
+
+/**
+ * SNSリンク追加 Server Action
+ * 同一キーが既に存在する場合はエラー（1SNS=1リンク）
+ */
+export async function addSocialLink(
+  platformKey: string,
+  rawValue: string,
+): Promise<ActionResult> {
+  // プラットフォーム定義確認
+  const platform = getPlatform(platformKey);
+  if (!platform) {
+    return { success: false, error: "対応していないSNSです" };
+  }
+
+  // 正規化
+  const normalized = platform.normalize
+    ? platform.normalize(rawValue)
+    : rawValue.trim().length > 0
+      ? { ok: true as const, value: rawValue.trim() }
+      : { ok: false as const, error: "入力してください" };
+
+  if (!normalized.ok) {
+    return { success: false, error: normalized.error };
+  }
+
+  const auth = await requireUser();
+  if (!auth.ok) return auth.result;
+
+  // 現在の social_links を取得
+  const { data: profile, error: fetchError } = await auth.supabase
+    .from("profiles")
+    .select("social_links")
+    .eq("owner_user_id", auth.userId)
+    .single();
+
+  if (fetchError || !profile) {
+    return { success: false, error: UPDATE_ERROR_MESSAGE };
+  }
+
+  const current = (profile.social_links as Record<string, string>) ?? {};
+
+  // 重複チェック
+  if (current[platformKey] !== undefined) {
+    return {
+      success: false,
+      error: `${platform.label} は既に登録されています`,
+    };
+  }
+
+  const updated = { ...current, [platformKey]: normalized.value };
+
+  const { error } = await auth.supabase
+    .from("profiles")
+    .update({ social_links: updated })
+    .eq("owner_user_id", auth.userId);
+
+  if (error) {
+    console.error("addSocialLink error:", error);
+    return { success: false, error: UPDATE_ERROR_MESSAGE };
+  }
+
+  revalidatePath("/mypage");
+  return { success: true, data: undefined };
+}
+
+/**
+ * SNSリンク更新 Server Action
+ * X OAuth自動設定値（`x`）は更新不可
+ */
+export async function updateSocialLink(
+  platformKey: string,
+  rawValue: string,
+): Promise<ActionResult> {
+  // X OAuth保護
+  if (platformKey === "x") {
+    return {
+      success: false,
+      error: "X (Twitter) はOAuth連携で設定されているため変更できません",
+    };
+  }
+
+  // プラットフォーム定義確認
+  const platform = getPlatform(platformKey);
+  if (!platform) {
+    return { success: false, error: "対応していないSNSです" };
+  }
+
+  // 正規化
+  const normalized = platform.normalize
+    ? platform.normalize(rawValue)
+    : rawValue.trim().length > 0
+      ? { ok: true as const, value: rawValue.trim() }
+      : { ok: false as const, error: "入力してください" };
+
+  if (!normalized.ok) {
+    return { success: false, error: normalized.error };
+  }
+
+  const auth = await requireUser();
+  if (!auth.ok) return auth.result;
+
+  // 現在の social_links を取得
+  const { data: profile, error: fetchError } = await auth.supabase
+    .from("profiles")
+    .select("social_links")
+    .eq("owner_user_id", auth.userId)
+    .single();
+
+  if (fetchError || !profile) {
+    return { success: false, error: UPDATE_ERROR_MESSAGE };
+  }
+
+  const current = (profile.social_links as Record<string, string>) ?? {};
+
+  // 未登録チェック
+  if (current[platformKey] === undefined) {
+    return {
+      success: false,
+      error: `${platform.label} はまだ登録されていません`,
+    };
+  }
+
+  const updated = { ...current, [platformKey]: normalized.value };
+
+  const { error } = await auth.supabase
+    .from("profiles")
+    .update({ social_links: updated })
+    .eq("owner_user_id", auth.userId);
+
+  if (error) {
+    console.error("updateSocialLink error:", error);
+    return { success: false, error: UPDATE_ERROR_MESSAGE };
+  }
+
+  revalidatePath("/mypage");
+  return { success: true, data: undefined };
+}
+
+/**
+ * SNSリンク削除 Server Action
+ * X OAuth自動設定値（`x`）は削除不可
+ */
+export async function removeSocialLink(
+  platformKey: string,
+): Promise<ActionResult> {
+  // X OAuth保護
+  if (platformKey === "x") {
+    return {
+      success: false,
+      error: "X (Twitter) はOAuth連携で設定されているため削除できません",
+    };
+  }
+
+  // プラットフォーム定義確認
+  const platform = getPlatform(platformKey);
+  if (!platform) {
+    return { success: false, error: "対応していないSNSです" };
+  }
+
+  const auth = await requireUser();
+  if (!auth.ok) return auth.result;
+
+  // 現在の social_links を取得
+  const { data: profile, error: fetchError } = await auth.supabase
+    .from("profiles")
+    .select("social_links")
+    .eq("owner_user_id", auth.userId)
+    .single();
+
+  if (fetchError || !profile) {
+    return { success: false, error: UPDATE_ERROR_MESSAGE };
+  }
+
+  const current = (profile.social_links as Record<string, string>) ?? {};
+
+  // 未登録チェック
+  if (current[platformKey] === undefined) {
+    return {
+      success: false,
+      error: `${platform.label} はまだ登録されていません`,
+    };
+  }
+
+  const updated = { ...current };
+  delete updated[platformKey];
+
+  const { error } = await auth.supabase
+    .from("profiles")
+    .update({ social_links: updated })
+    .eq("owner_user_id", auth.userId);
+
+  if (error) {
+    console.error("removeSocialLink error:", error);
+    return { success: false, error: UPDATE_ERROR_MESSAGE };
+  }
+
+  revalidatePath("/mypage");
+  return { success: true, data: undefined };
 }

@@ -4,10 +4,10 @@
  * マイページ編集エリアの親コンテナ。
  * 状態管理（保存・差分・離脱保護）と、プレビュー/編集ペインのレイアウトを担当する。
  */
-import { useActionState, useEffect, useMemo, useState } from "react";
-import { updateProfile } from "@/app/actions/profile";
-import { SOCIAL_PLATFORMS } from "@/lib/social-platforms";
+import { useActionState, useEffect, useState, useTransition } from "react";
+import { removeSocialLink, updateProfile } from "@/app/actions/profile";
 import type { ProfileUpdateResult } from "@/lib/types/action";
+import { AddSocialLinkModal } from "./add-social-link-modal";
 import { ProfileEditFields } from "./profile-edit-fields";
 import { ProfilePreviewCard } from "./profile-preview-card";
 
@@ -15,25 +15,15 @@ interface ProfileEditFormProps {
   displayName: string;
   bio: string | null;
   socialLinks: Record<string, string>;
-  slug: string | null;
   avatarUrl: string | null;
   previewPath: string;
   lockedSocialKeys: string[];
-}
-
-function initSocialLinksState(socialLinks: Record<string, string>) {
-  const result: Record<string, string> = {};
-  for (const p of SOCIAL_PLATFORMS) {
-    result[p.key] = socialLinks[p.key] ?? "";
-  }
-  return result;
 }
 
 export function ProfileEditForm({
   displayName,
   bio,
   socialLinks,
-  slug,
   avatarUrl,
   previewPath,
   lockedSocialKeys,
@@ -44,90 +34,47 @@ export function ProfileEditForm({
   // フォーム内の現在値
   const [currentDisplayName, setCurrentDisplayName] = useState(displayName);
   const [currentBio, setCurrentBio] = useState(bio ?? "");
-  const [currentSocialLinks, setCurrentSocialLinks] = useState(() =>
-    initSocialLinksState(socialLinks),
-  );
-  const [currentSlug, setCurrentSlug] = useState(slug ?? "");
+  const [currentSocialLinks, setCurrentSocialLinks] =
+    useState<Record<string, string>>(socialLinks);
 
   // 差分検知用の基準値（最後に保存された値）
   const [originalDisplayName, setOriginalDisplayName] = useState(displayName);
   const [originalBio, setOriginalBio] = useState(bio ?? "");
-  const [originalSocialLinks, setOriginalSocialLinks] = useState(() =>
-    initSocialLinksState(socialLinks),
-  );
-  const [originalSlug, setOriginalSlug] = useState(slug ?? "");
+
+  // モーダル状態
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editModalKey, setEditModalKey] = useState<string | null>(null);
+
+  // 削除処理中のキー
+  const [removingKey, setRemovingKey] = useState<string | null>(null);
+  const [, startRemoveTransition] = useTransition();
 
   const [state, formAction, isPending] = useActionState<
     ProfileUpdateResult | null,
     FormData
   >(updateProfile, null);
 
-  // プレビュー用: 正規化済み social_links（バリデーション失敗はスキップ）
-  const previewSocialLinks = useMemo(() => {
-    const result: Record<string, string> = {};
-    for (const platform of SOCIAL_PLATFORMS) {
-      const input = currentSocialLinks[platform.key]?.trim() ?? "";
-      if (!input) continue;
-      if (platform.normalize) {
-        const normalized = platform.normalize(input);
-        if (normalized.ok) result[platform.key] = normalized.value;
-      } else {
-        result[platform.key] = input;
-      }
-    }
-    return result;
-  }, [currentSocialLinks]);
-
-  function setSocialLinkValue(key: string, value: string) {
-    setCurrentSocialLinks((prev) => ({ ...prev, [key]: value }));
-  }
-
   // 保存成功時: 基準値更新＆保存完了メッセージ表示
   useEffect(() => {
     if (state?.success) {
       const nextDisplayName = currentDisplayName.trim();
       const nextBio = currentBio.trim();
-      const nextSlug = currentSlug.trim();
-
-      // social_links: 正規化して保存
-      const nextSocialLinks: Record<string, string> = {};
-      for (const platform of SOCIAL_PLATFORMS) {
-        const input = currentSocialLinks[platform.key]?.trim() ?? "";
-        if (!input) continue;
-        if (platform.normalize) {
-          const r = platform.normalize(input);
-          nextSocialLinks[platform.key] = r.ok ? r.value : input;
-        } else {
-          nextSocialLinks[platform.key] = input;
-        }
-      }
 
       setCurrentDisplayName(nextDisplayName);
       setCurrentBio(nextBio);
-      setCurrentSocialLinks(nextSocialLinks);
-      setCurrentSlug(nextSlug);
 
       setOriginalDisplayName(nextDisplayName);
       setOriginalBio(nextBio);
-      setOriginalSocialLinks(nextSocialLinks);
-      setOriginalSlug(nextSlug);
 
       setSavedMessage(true);
       const timer = setTimeout(() => setSavedMessage(false), 2000);
       return () => clearTimeout(timer);
     }
-  }, [state, currentDisplayName, currentBio, currentSocialLinks, currentSlug]);
+  }, [state, currentDisplayName, currentBio]);
 
-  // dirty チェック
+  // dirty チェック（social_links, slug は Server Action で個別保存のため除外）
   const isDirty =
-    currentDisplayName !== originalDisplayName ||
-    currentBio !== originalBio ||
-    currentSlug !== originalSlug ||
-    SOCIAL_PLATFORMS.some(
-      (p) =>
-        (currentSocialLinks[p.key] ?? "") !==
-        (originalSocialLinks[p.key] ?? ""),
-    );
+    currentDisplayName !== originalDisplayName || currentBio !== originalBio;
 
   // ブラウザ離脱保護（未保存の場合）
   useEffect(() => {
@@ -137,19 +84,29 @@ export function ProfileEditForm({
     return () => window.removeEventListener("beforeunload", handler);
   }, [isDirty]);
 
-  // リセットボタン: 未保存変更がある場合は確認ダイアログ
-  const handleReset = () => {
-    if (
-      isDirty &&
-      !window.confirm("保存していない変更があります。破棄しますか？")
-    ) {
-      return;
-    }
-    setCurrentDisplayName(originalDisplayName);
-    setCurrentBio(originalBio);
-    setCurrentSocialLinks(originalSocialLinks);
-    setCurrentSlug(originalSlug);
-  };
+  // SNSリンク追加成功後: ローカル状態を更新
+  function handleSocialLinkSaved(key: string, value: string) {
+    setCurrentSocialLinks((prev) => ({ ...prev, [key]: value }));
+  }
+
+  // SNSリンク削除
+  function handleRemoveSocialLink(key: string) {
+    if (!window.confirm("このSNSリンクを削除しますか？")) return;
+    setRemovingKey(key);
+    startRemoveTransition(async () => {
+      const result = await removeSocialLink(key);
+      setRemovingKey(null);
+      if (!result.success) {
+        window.alert(result.error);
+        return;
+      }
+      setCurrentSocialLinks((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    });
+  }
 
   // フィールドエラーの取り出し（型ガード付き）
   const fieldErrors = state && !state.success ? state.fieldErrors : {};
@@ -194,7 +151,7 @@ export function ProfileEditForm({
             avatarUrl={avatarUrl}
             previewDisplayName={previewDisplayName}
             previewBio={previewBio}
-            previewSocialLinks={previewSocialLinks}
+            previewSocialLinks={currentSocialLinks}
             previewPath={previewPath}
           />
         </section>
@@ -209,22 +166,45 @@ export function ProfileEditForm({
             formAction={formAction}
             originalDisplayName={originalDisplayName}
             originalBio={originalBio}
-            originalSocialLinks={originalSocialLinks}
-            originalSlug={originalSlug}
             currentDisplayName={currentDisplayName}
             setCurrentDisplayName={setCurrentDisplayName}
             currentBio={currentBio}
             setCurrentBio={setCurrentBio}
             currentSocialLinks={currentSocialLinks}
-            setSocialLinkValue={setSocialLinkValue}
-            currentSlug={currentSlug}
-            setCurrentSlug={setCurrentSlug}
-            fieldErrors={fieldErrors}
-            handleReset={handleReset}
             lockedSocialKeys={lockedSocialKeys}
+            onRemoveSocialLink={handleRemoveSocialLink}
+            onAddSocialLinkClick={() => setIsAddModalOpen(true)}
+            onEditSocialLinkClick={(key) => setEditModalKey(key)}
+            fieldErrors={fieldErrors}
+            removingKey={removingKey}
           />
         </section>
       </div>
+
+      {/* 追加モーダル */}
+      {isAddModalOpen && (
+        <AddSocialLinkModal
+          existingKeys={Object.keys(currentSocialLinks)}
+          mode="add"
+          onClose={() => setIsAddModalOpen(false)}
+          onSaved={handleSocialLinkSaved}
+        />
+      )}
+
+      {/* 編集モーダル */}
+      {editModalKey && (
+        <AddSocialLinkModal
+          existingKeys={Object.keys(currentSocialLinks)}
+          mode="edit"
+          initialPlatformKey={editModalKey}
+          initialValue={currentSocialLinks[editModalKey] ?? ""}
+          onClose={() => setEditModalKey(null)}
+          onSaved={(key, value) => {
+            handleSocialLinkSaved(key, value);
+            setEditModalKey(null);
+          }}
+        />
+      )}
     </div>
   );
 }

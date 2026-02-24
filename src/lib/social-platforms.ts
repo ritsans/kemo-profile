@@ -1,6 +1,8 @@
 import type { ComponentType } from "react";
 
 import { XIcon } from "@/components/icons/x-icon";
+import { normalizeInstagramUsername } from "@/lib/utils/instagram-username";
+import { normalizePixivUserId } from "@/lib/utils/pixiv-user-id";
 import { normalizeXUsername } from "@/lib/utils/x-username";
 
 export interface SocialPlatform {
@@ -42,6 +44,23 @@ export const SOCIAL_PLATFORMS: SocialPlatform[] = [
     placeholder: "username または https://x.com/username",
     icon: XIcon,
     buttonClass: "bg-black hover:bg-gray-800 active:bg-gray-900",
+  },
+  {
+    key: "instagram",
+    label: "Instagram",
+    profileUrl: (v) => `https://instagram.com/${v}`,
+    normalize: normalizeInstagramUsername,
+    placeholder: "@username または https://instagram.com/username",
+    buttonClass:
+      "bg-gradient-to-r from-pink-500 via-red-500 to-yellow-400 hover:from-pink-600 hover:via-red-600 hover:to-yellow-500 active:from-pink-700 active:via-red-700 active:to-yellow-600",
+  },
+  {
+    key: "pixiv",
+    label: "Pixiv",
+    profileUrl: (v) => `https://www.pixiv.net/users/${v}`,
+    normalize: normalizePixivUserId,
+    placeholder: "12345678 または https://www.pixiv.net/users/12345678",
+    buttonClass: "bg-blue-500 hover:bg-blue-600 active:bg-blue-700",
   },
 ];
 

@@ -5,7 +5,7 @@
  * 右ペインの入力UIとエラー表示のみを担当する。
  */
 import { Input, Textarea } from "@/components/ui/input";
-import { SOCIAL_PLATFORMS } from "@/lib/social-platforms";
+import { getPlatform } from "@/lib/social-platforms";
 
 interface ProfileEditFieldsProps {
   savedMessage: boolean;
@@ -14,19 +14,23 @@ interface ProfileEditFieldsProps {
   formAction: (formData: FormData) => void | Promise<void>;
   originalDisplayName: string;
   originalBio: string;
-  originalSocialLinks: Record<string, string>;
-  originalSlug: string;
   currentDisplayName: string;
   setCurrentDisplayName: (value: string) => void;
   currentBio: string;
   setCurrentBio: (value: string) => void;
+  /** 現在登録済みの social_links */
   currentSocialLinks: Record<string, string>;
-  setSocialLinkValue: (key: string, value: string) => void;
-  currentSlug: string;
-  setCurrentSlug: (value: string) => void;
-  fieldErrors: Record<string, string>;
-  handleReset: () => void;
+  /** ロック済みキー（表示のみ・削除不可） */
   lockedSocialKeys: string[];
+  /** 削除ボタン押下 */
+  onRemoveSocialLink: (key: string) => void;
+  /** + リンクを追加 ボタン押下 */
+  onAddSocialLinkClick: () => void;
+  /** 編集ボタン押下 */
+  onEditSocialLinkClick: (key: string) => void;
+  fieldErrors: Partial<Record<string, string>>;
+  /** 削除処理中のキー（削除ボタンを無効化） */
+  removingKey: string | null;
 }
 
 export function ProfileEditFields({
@@ -36,20 +40,20 @@ export function ProfileEditFields({
   formAction,
   originalDisplayName,
   originalBio,
-  originalSocialLinks,
-  originalSlug,
   currentDisplayName,
   setCurrentDisplayName,
   currentBio,
   setCurrentBio,
   currentSocialLinks,
-  setSocialLinkValue,
-  currentSlug,
-  setCurrentSlug,
-  fieldErrors,
-  handleReset,
   lockedSocialKeys,
+  onRemoveSocialLink,
+  onAddSocialLinkClick,
+  onEditSocialLinkClick,
+  fieldErrors,
+  removingKey,
 }: ProfileEditFieldsProps) {
+  const registeredEntries = Object.entries(currentSocialLinks);
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -72,15 +76,6 @@ export function ProfileEditFields({
           value={originalDisplayName}
         />
         <input type="hidden" name="original_bio" value={originalBio} />
-        {SOCIAL_PLATFORMS.map((platform) => (
-          <input
-            key={platform.key}
-            type="hidden"
-            name={`original_social_${platform.key}`}
-            value={originalSocialLinks[platform.key] ?? ""}
-          />
-        ))}
-        <input type="hidden" name="original_slug" value={originalSlug} />
 
         <div>
           <label
@@ -133,64 +128,68 @@ export function ProfileEditFields({
           )}
         </div>
 
-        {SOCIAL_PLATFORMS.map((platform) => {
-          const isLocked = lockedSocialKeys.includes(platform.key);
-          return (
-            <div key={platform.key}>
-              <label
-                htmlFor={`social_${platform.key}`}
-                className="mb-1 block text-sm font-medium text-gray-700"
-              >
-                {platform.label}
-              </label>
-              <Input
-                type="text"
-                id={`social_${platform.key}`}
-                name={`social_${platform.key}`}
-                value={currentSocialLinks[platform.key] ?? ""}
-                onChange={(e) =>
-                  setSocialLinkValue(platform.key, e.target.value)
-                }
-                disabled={isPending || isLocked}
-                placeholder={platform.placeholder}
-              />
-              {isLocked && (
-                <p className="mt-1 text-xs text-gray-400">
-                  OAuth連携で自動設定されています
-                </p>
-              )}
-              {fieldErrors[`social_${platform.key}`] && (
-                <p className="mt-1 text-sm text-red-600">
-                  {fieldErrors[`social_${platform.key}`]}
-                </p>
-              )}
-            </div>
-          );
-        })}
-
+        {/* SNSリンク一覧 */}
         <div>
-          <label
-            htmlFor="slug"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
-            カスタムURL
-          </label>
-          <Input
-            type="text"
-            id="slug"
-            name="slug"
-            value={currentSlug}
-            onChange={(e) => setCurrentSlug(e.target.value)}
-            maxLength={20}
-            disabled={isPending}
-            placeholder="my_name"
-          />
-          <p className="mt-1 text-xs text-gray-400">
-            英小文字で始まり、英小文字・数字・アンダースコアのみ、3〜20文字
-          </p>
-          {fieldErrors.slug && (
-            <p className="mt-1 text-sm text-red-600">{fieldErrors.slug}</p>
+          <p className="mb-2 text-sm font-medium text-gray-700">SNSリンク</p>
+          {registeredEntries.length === 0 ? (
+            <p className="mb-2 text-sm text-gray-400">
+              SNSリンクはまだ登録されていません
+            </p>
+          ) : (
+            <ul className="mb-3 space-y-2">
+              {registeredEntries.map(([key, value]) => {
+                const platform = getPlatform(key);
+                const isLocked = lockedSocialKeys.includes(key);
+                const isRemoving = removingKey === key;
+                return (
+                  <li
+                    key={key}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-gray-500">
+                        {platform?.label ?? key}
+                        {isLocked && (
+                          <span className="ml-1 text-gray-400">
+                            （OAuth連携）
+                          </span>
+                        )}
+                      </p>
+                      <p className="truncate text-sm text-gray-800">{value}</p>
+                    </div>
+                    {!isLocked && (
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onEditSocialLinkClick(key)}
+                          disabled={isPending || isRemoving}
+                          className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-40"
+                        >
+                          編集
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onRemoveSocialLink(key)}
+                          disabled={isPending || isRemoving}
+                          className="text-xs text-red-500 hover:text-red-700 disabled:opacity-40"
+                        >
+                          {isRemoving ? "削除中..." : "削除"}
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           )}
+          <button
+            type="button"
+            onClick={onAddSocialLinkClick}
+            disabled={isPending}
+            className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 disabled:opacity-40"
+          >
+            <span aria-hidden="true">+</span> リンクを追加
+          </button>
         </div>
 
         <div className="flex pt-2">
