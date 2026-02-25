@@ -1,34 +1,25 @@
 "use client";
 
+// アカウント連携するプロバイダーを表示し、連携処理を行うコンポーネント
+
 import { useMemo, useState } from "react";
 import { XIcon } from "@/components/icons/x-icon";
 import { getLinkIdentityErrorMessage } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/client";
 
-/**
- * プロバイダー定義
- */
+/** プロバイダー定義 */
 const PROVIDERS = [
-  { id: "google", label: "Google", supabaseProvider: "google" },
-  { id: "twitter", label: "X (Twitter)", supabaseProvider: "twitter" },
+  { id: "google", label: "Google" },
+  { id: "twitter", label: "X (Twitter)" },
 ] as const;
 
 type ProviderId = (typeof PROVIDERS)[number]["id"];
 
-/**
- * Supabase Auth の Identity 型（必要な部分のみ）
- */
-interface UserIdentity {
-  provider: string;
-}
-
 interface LinkedProvidersCardProps {
-  identities: UserIdentity[] | undefined;
+  identities: { provider: string }[] | undefined;
 }
 
-/**
- * Google アイコン
- */
+/** Google アイコン */
 function GoogleIcon() {
   return (
     <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
@@ -52,9 +43,7 @@ function GoogleIcon() {
   );
 }
 
-/**
- * チェックマークアイコン
- */
+/** チェックマークアイコン */
 function CheckIcon() {
   return (
     <svg
@@ -72,9 +61,7 @@ function CheckIcon() {
   );
 }
 
-/**
- * プロバイダーアイコンを取得
- */
+/** プロバイダーアイコンを返す */
 function ProviderIcon({ provider }: { provider: ProviderId }) {
   switch (provider) {
     case "google":
@@ -94,19 +81,19 @@ export function LinkedProvidersCard({ identities }: LinkedProvidersCardProps) {
 
   const supabase = useMemo(() => createClient(), []);
 
-  // プロバイダーが連携済みかチェック
-  const isLinked = (provider: string): boolean => {
-    return identities?.some((i) => i.provider === provider) ?? false;
-  };
+  /** プロバイダーが連携済みかチェック */
+  function isLinked(providerId: string): boolean {
+    return identities?.some((i) => i.provider === providerId) ?? false;
+  }
 
-  // 連携処理
-  const handleLink = async (provider: "google" | "twitter") => {
+  /** 連携処理 */
+  async function handleLink(providerId: ProviderId): Promise<void> {
     setError(null);
-    setIsLoading((prev) => ({ ...prev, [provider]: true }));
+    setIsLoading((prev) => ({ ...prev, [providerId]: true }));
 
     const { origin } = window.location;
     const { error: linkError } = await supabase.auth.linkIdentity({
-      provider,
+      provider: providerId,
       options: {
         redirectTo: `${origin}/auth/callback?next=/mypage`,
       },
@@ -114,10 +101,10 @@ export function LinkedProvidersCard({ identities }: LinkedProvidersCardProps) {
 
     if (linkError) {
       setError(getLinkIdentityErrorMessage(linkError));
-      setIsLoading((prev) => ({ ...prev, [provider]: false }));
+      setIsLoading((prev) => ({ ...prev, [providerId]: false }));
     }
     // 成功時はリダイレクトされるため、ローディング状態はリセット不要
-  };
+  }
 
   return (
     <div className="rounded-lg bg-white p-6 shadow">
@@ -144,7 +131,7 @@ export function LinkedProvidersCard({ identities }: LinkedProvidersCardProps) {
               </span>
             </div>
 
-            {isLinked(provider.supabaseProvider) ? (
+            {isLinked(provider.id) ? (
               <span className="flex items-center gap-1 text-sm text-green-600">
                 <CheckIcon />
                 連携済み
@@ -152,9 +139,7 @@ export function LinkedProvidersCard({ identities }: LinkedProvidersCardProps) {
             ) : (
               <button
                 type="button"
-                onClick={() =>
-                  handleLink(provider.supabaseProvider as "google" | "twitter")
-                }
+                onClick={() => handleLink(provider.id)}
                 disabled={isLoading[provider.id]}
                 className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >

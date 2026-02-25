@@ -61,13 +61,7 @@ export function ProfileEditFields({
         <h2 className="text-base font-semibold text-gray-900">
           プロフィール編集
         </h2>
-        {savedMessage ? (
-          <p className="text-sm text-green-600">保存しました</p>
-        ) : isDirty ? (
-          <p className="text-sm text-amber-600">未保存の変更があります</p>
-        ) : (
-          <p className="text-sm text-gray-400">保存済み</p>
-        )}
+        <SaveStatus saved={savedMessage} dirty={isDirty} />
       </div>
 
       <form action={formAction} className="space-y-5">
@@ -125,11 +119,9 @@ export function ProfileEditFields({
                 disabled={isPending}
                 placeholder="自己紹介を入力してください（160文字以内）"
               />
-              <div className="mt-1 flex items-center justify-between">
-                <span className="text-xs text-gray-400">
-                  {currentBio.length} / 160
-                </span>
-              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                {currentBio.length} / 160
+              </p>
               {fieldErrors.bio && (
                 <p className="mt-1 text-sm text-red-600">{fieldErrors.bio}</p>
               )}
@@ -215,4 +207,15 @@ export function ProfileEditFields({
       </form>
     </div>
   );
+}
+
+/** 保存状態に応じたステータスメッセージ */
+function SaveStatus({ saved, dirty }: { saved: boolean; dirty: boolean }) {
+  if (saved) {
+    return <p className="text-sm text-green-600">保存しました</p>;
+  }
+  if (dirty) {
+    return <p className="text-sm text-amber-600">未保存の変更があります</p>;
+  }
+  return <p className="text-sm text-gray-400">保存済み</p>;
 }

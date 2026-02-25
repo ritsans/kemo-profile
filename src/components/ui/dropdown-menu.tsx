@@ -44,7 +44,10 @@ export function DropdownMenu({ items, disabled }: DropdownMenuProps) {
         aria-label="メニューを開く"
         className="flex h-7 w-7 items-center justify-center rounded text-gray-500 hover:bg-gray-200 disabled:opacity-40"
       >
-        <span aria-hidden="true" className="text-base leading-none tracking-widest">
+        <span
+          aria-hidden="true"
+          className="text-base leading-none tracking-widest"
+        >
           ···
         </span>
       </button>

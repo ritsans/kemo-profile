@@ -20,6 +20,20 @@ interface ProfileEditFormProps {
   lockedSocialKeys: string[];
 }
 
+type ModalState = { type: "add" } | { type: "edit"; key: string } | null;
+
+/** モバイル切り替えタブのスタイル */
+function paneTabClass(isActive: boolean): string {
+  return `rounded-lg px-3 py-2 transition ${
+    isActive ? "bg-white text-gray-900 shadow-sm" : "text-gray-600"
+  }`;
+}
+
+/** セクションの表示/非表示クラス（モバイル時のペイン切り替え用） */
+function paneSectionClass(isVisible: boolean): string {
+  return isVisible ? "block" : "hidden lg:block";
+}
+
 export function ProfileEditForm({
   displayName,
   bio,
@@ -38,11 +52,10 @@ export function ProfileEditForm({
     useState<Record<string, string>>(socialLinks);
 
   // 差分検知用の基準値（最後に保存された値）
-  const [originalDisplayName, setOriginalDisplayName] = useState(displayName);
-  const [originalBio, setOriginalBio] = useState(bio ?? "");
+  const [savedDisplayName, setSavedDisplayName] = useState(displayName);
+  const [savedBio, setSavedBio] = useState(bio ?? "");
 
   // モーダル状態
-  type ModalState = { type: "add" } | { type: "edit"; key: string } | null;
   const [modalState, setModalState] = useState<ModalState>(null);
 
   // 削除処理中のキー
@@ -56,25 +69,24 @@ export function ProfileEditForm({
 
   // 保存成功時: 基準値更新＆保存完了メッセージ表示
   useEffect(() => {
-    if (state?.success) {
-      const nextDisplayName = currentDisplayName.trim();
-      const nextBio = currentBio.trim();
+    if (!state?.success) return;
 
-      setCurrentDisplayName(nextDisplayName);
-      setCurrentBio(nextBio);
+    const trimmedName = currentDisplayName.trim();
+    const trimmedBio = currentBio.trim();
 
-      setOriginalDisplayName(nextDisplayName);
-      setOriginalBio(nextBio);
+    setCurrentDisplayName(trimmedName);
+    setCurrentBio(trimmedBio);
+    setSavedDisplayName(trimmedName);
+    setSavedBio(trimmedBio);
 
-      setSavedMessage(true);
-      const timer = setTimeout(() => setSavedMessage(false), 2000);
-      return () => clearTimeout(timer);
-    }
+    setSavedMessage(true);
+    const timer = setTimeout(() => setSavedMessage(false), 2000);
+    return () => clearTimeout(timer);
   }, [state, currentDisplayName, currentBio]);
 
   // dirty チェック（social_links, slug は Server Action で個別保存のため除外）
   const isDirty =
-    currentDisplayName !== originalDisplayName || currentBio !== originalBio;
+    currentDisplayName !== savedDisplayName || currentBio !== savedBio;
 
   // ブラウザ離脱保護（未保存の場合）
   useEffect(() => {
@@ -84,9 +96,10 @@ export function ProfileEditForm({
     return () => window.removeEventListener("beforeunload", handler);
   }, [isDirty]);
 
-  // SNSリンク追加成功後: ローカル状態を更新
+  // SNSリンク追加・編集の保存後: ローカル状態を更新してモーダルを閉じる
   function handleSocialLinkSaved(key: string, value: string) {
     setCurrentSocialLinks((prev) => ({ ...prev, [key]: value }));
+    setModalState(null);
   }
 
   // SNSリンク削除
@@ -101,14 +114,12 @@ export function ProfileEditForm({
         return;
       }
       setCurrentSocialLinks((prev) => {
-        const next = { ...prev };
-        delete next[key];
-        return next;
+        const { [key]: _, ...rest } = prev;
+        return rest;
       });
     });
   }
 
-  // フィールドエラーの取り出し（型ガード付き）
   const fieldErrors = state && !state.success ? state.fieldErrors : {};
   const previewDisplayName =
     currentDisplayName.trim() || "表示名を入力してください";
@@ -116,27 +127,20 @@ export function ProfileEditForm({
 
   return (
     <div className="space-y-4">
+      {/* モバイル用ペイン切り替えタブ */}
       <div className="mb-4 rounded-xl bg-gray-100 p-1 lg:hidden">
         <div className="grid grid-cols-2 gap-1 text-sm font-medium">
           <button
             type="button"
             onClick={() => setMobilePane("preview")}
-            className={`rounded-lg px-3 py-2 transition ${
-              mobilePane === "preview"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600"
-            }`}
+            className={paneTabClass(mobilePane === "preview")}
           >
             プレビュー
           </button>
           <button
             type="button"
             onClick={() => setMobilePane("edit")}
-            className={`rounded-lg px-3 py-2 transition ${
-              mobilePane === "edit"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600"
-            }`}
+            className={paneTabClass(mobilePane === "edit")}
           >
             編集
           </button>
@@ -144,9 +148,7 @@ export function ProfileEditForm({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section
-          className={mobilePane === "preview" ? "block" : "hidden lg:block"}
-        >
+        <section className={paneSectionClass(mobilePane === "preview")}>
           <ProfilePreviewCard
             avatarUrl={avatarUrl}
             previewDisplayName={previewDisplayName}
@@ -156,16 +158,14 @@ export function ProfileEditForm({
           />
         </section>
 
-        <section
-          className={mobilePane === "edit" ? "block" : "hidden lg:block"}
-        >
+        <section className={paneSectionClass(mobilePane === "edit")}>
           <ProfileEditFields
             savedMessage={savedMessage}
             isDirty={isDirty}
             isPending={isPending}
             formAction={formAction}
-            originalDisplayName={originalDisplayName}
-            originalBio={originalBio}
+            originalDisplayName={savedDisplayName}
+            originalBio={savedBio}
             currentDisplayName={currentDisplayName}
             setCurrentDisplayName={setCurrentDisplayName}
             currentBio={currentBio}
@@ -174,7 +174,9 @@ export function ProfileEditForm({
             lockedSocialKeys={lockedSocialKeys}
             onRemoveSocialLink={handleRemoveSocialLink}
             onAddSocialLinkClick={() => setModalState({ type: "add" })}
-            onEditSocialLinkClick={(key) => setModalState({ type: "edit", key })}
+            onEditSocialLinkClick={(key) =>
+              setModalState({ type: "edit", key })
+            }
             fieldErrors={fieldErrors}
             removingKey={removingKey}
           />
@@ -185,13 +187,16 @@ export function ProfileEditForm({
         <AddSocialLinkModal
           existingKeys={Object.keys(currentSocialLinks)}
           mode={modalState.type}
-          initialPlatformKey={modalState.type === "edit" ? modalState.key : undefined}
-          initialValue={modalState.type === "edit" ? (currentSocialLinks[modalState.key] ?? "") : undefined}
+          initialPlatformKey={
+            modalState.type === "edit" ? modalState.key : undefined
+          }
+          initialValue={
+            modalState.type === "edit"
+              ? (currentSocialLinks[modalState.key] ?? "")
+              : undefined
+          }
           onClose={() => setModalState(null)}
-          onSaved={(key, value) => {
-            handleSocialLinkSaved(key, value);
-            setModalState(null);
-          }}
+          onSaved={handleSocialLinkSaved}
         />
       )}
     </div>

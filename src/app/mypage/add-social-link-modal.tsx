@@ -50,16 +50,22 @@ export function AddSocialLinkModal({
 
   const platform = getPlatform(selectedKey);
 
-  // URLプレビュー: 入力値を正規化してリンクURLを生成
-  const urlPreview = (() => {
-    if (!platform?.profileUrl || !inputValue.trim()) return null;
+  // 入力値を正規化して返す。正規化関数がなければ trim のみ
+  function normalizeInput(): { ok: true; value: string } | null {
+    if (!platform || !inputValue.trim()) return null;
     if (platform.normalize) {
       const result = platform.normalize(inputValue);
-      if (!result.ok) return null;
-      return platform.profileUrl(result.value);
+      return result.ok ? result : null;
     }
-    return platform.profileUrl(inputValue.trim());
-  })();
+    return { ok: true, value: inputValue.trim() };
+  }
+
+  // URLプレビュー: 正規化済みの値からリンクURLを生成
+  const normalized = normalizeInput();
+  const urlPreview =
+    normalized && platform?.profileUrl
+      ? platform.profileUrl(normalized.value)
+      : null;
 
   function handleSelectPlatform(key: string) {
     setSelectedKey(key);
@@ -89,13 +95,9 @@ export function AddSocialLinkModal({
         return;
       }
 
-      // 正規化済みの値を取得してコールバック
-      let savedValue = inputValue.trim();
-      if (platform.normalize) {
-        const r = platform.normalize(inputValue);
-        if (r.ok) savedValue = r.value;
-      }
-      onSaved(selectedKey, savedValue);
+      // 正規化済みの値をコールバックに渡す
+      const saved = normalizeInput();
+      onSaved(selectedKey, saved?.value ?? inputValue.trim());
       onClose();
     });
   }
