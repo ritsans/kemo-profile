@@ -4,6 +4,7 @@
  * プロフィール編集フォームのフィールド群。
  * 右ペインの入力UIとエラー表示のみを担当する。
  */
+import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { Input, Textarea } from "@/components/ui/input";
 import { getPlatform } from "@/lib/social-platforms";
 
@@ -77,60 +78,70 @@ export function ProfileEditFields({
         />
         <input type="hidden" name="original_bio" value={originalBio} />
 
+        {/* Basic セクション */}
         <div>
-          <label
-            htmlFor="display_name"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
-            表示名 <span className="text-red-500">*</span>
-          </label>
-          <Input
-            type="text"
-            id="display_name"
-            name="display_name"
-            value={currentDisplayName}
-            onChange={(e) => setCurrentDisplayName(e.target.value)}
-            required
-            maxLength={50}
-            disabled={isPending}
-          />
-          {fieldErrors.display_name && (
-            <p className="mt-1 text-sm text-red-600">
-              {fieldErrors.display_name}
-            </p>
-          )}
-        </div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+            Basic
+          </p>
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor="display_name"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                Name <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="text"
+                id="display_name"
+                name="display_name"
+                value={currentDisplayName}
+                onChange={(e) => setCurrentDisplayName(e.target.value)}
+                required
+                maxLength={50}
+                disabled={isPending}
+              />
+              {fieldErrors.display_name && (
+                <p className="mt-1 text-sm text-red-600">
+                  {fieldErrors.display_name}
+                </p>
+              )}
+            </div>
 
-        <div>
-          <label
-            htmlFor="bio"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
-            自己紹介
-          </label>
-          <Textarea
-            id="bio"
-            name="bio"
-            value={currentBio}
-            onChange={(e) => setCurrentBio(e.target.value)}
-            maxLength={160}
-            rows={3}
-            disabled={isPending}
-            placeholder="自己紹介を入力してください（160文字以内）"
-          />
-          <div className="mt-1 flex items-center justify-between">
-            <span className="text-xs text-gray-400">
-              {currentBio.length} / 160
-            </span>
+            <div>
+              <label
+                htmlFor="bio"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                Bio
+              </label>
+              <Textarea
+                id="bio"
+                name="bio"
+                value={currentBio}
+                onChange={(e) => setCurrentBio(e.target.value)}
+                maxLength={160}
+                rows={3}
+                disabled={isPending}
+                placeholder="自己紹介を入力してください（160文字以内）"
+              />
+              <div className="mt-1 flex items-center justify-between">
+                <span className="text-xs text-gray-400">
+                  {currentBio.length} / 160
+                </span>
+              </div>
+              {fieldErrors.bio && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.bio}</p>
+              )}
+            </div>
           </div>
-          {fieldErrors.bio && (
-            <p className="mt-1 text-sm text-red-600">{fieldErrors.bio}</p>
-          )}
         </div>
 
-        {/* SNSリンク一覧 */}
+        {/* SNS Links セクション */}
         <div>
-          <p className="mb-2 text-sm font-medium text-gray-700">SNSリンク</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+            SNS Links
+          </p>
           {registeredEntries.length === 0 ? (
             <p className="mb-2 text-sm text-gray-400">
               SNSリンクはまだ登録されていません
@@ -141,41 +152,41 @@ export function ProfileEditFields({
                 const platform = getPlatform(key);
                 const isLocked = lockedSocialKeys.includes(key);
                 const isRemoving = removingKey === key;
+                const Icon = platform?.icon;
                 return (
                   <li
                     key={key}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
+                    className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
                   >
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-gray-500">
-                        {platform?.label ?? key}
-                        {isLocked && (
-                          <span className="ml-1 text-gray-400">
-                            （OAuth連携）
-                          </span>
-                        )}
-                      </p>
-                      <p className="truncate text-sm text-gray-800">{value}</p>
-                    </div>
+                    {Icon && (
+                      <Icon
+                        className="h-4 w-4 shrink-0 text-gray-600"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span className="min-w-0 flex-1 truncate text-sm text-gray-800">
+                      @{value}
+                      {isLocked && (
+                        <span className="ml-1 text-xs text-gray-400">
+                          （OAuth連携）
+                        </span>
+                      )}
+                    </span>
                     {!isLocked && (
-                      <div className="flex shrink-0 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onEditSocialLinkClick(key)}
-                          disabled={isPending || isRemoving}
-                          className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-40"
-                        >
-                          編集
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onRemoveSocialLink(key)}
-                          disabled={isPending || isRemoving}
-                          className="text-xs text-red-500 hover:text-red-700 disabled:opacity-40"
-                        >
-                          {isRemoving ? "削除中..." : "削除"}
-                        </button>
-                      </div>
+                      <DropdownMenu
+                        disabled={isPending || isRemoving}
+                        items={[
+                          {
+                            label: "編集",
+                            onClick: () => onEditSocialLinkClick(key),
+                          },
+                          {
+                            label: isRemoving ? "削除中..." : "削除",
+                            variant: "danger",
+                            onClick: () => onRemoveSocialLink(key),
+                          },
+                        ]}
+                      />
                     )}
                   </li>
                 );
@@ -186,7 +197,7 @@ export function ProfileEditFields({
             type="button"
             onClick={onAddSocialLinkClick}
             disabled={isPending}
-            className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 disabled:opacity-40"
+            className="flex items-center gap-1 text-sm text-blue-600 underline decoration-dashed decoration-blue-400 underline-offset-4 hover:text-blue-800 disabled:opacity-40"
           >
             <span aria-hidden="true">+</span> リンクを追加
           </button>

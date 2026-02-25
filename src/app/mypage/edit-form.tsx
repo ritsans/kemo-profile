@@ -42,8 +42,8 @@ export function ProfileEditForm({
   const [originalBio, setOriginalBio] = useState(bio ?? "");
 
   // モーダル状態
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editModalKey, setEditModalKey] = useState<string | null>(null);
+  type ModalState = { type: "add" } | { type: "edit"; key: string } | null;
+  const [modalState, setModalState] = useState<ModalState>(null);
 
   // 削除処理中のキー
   const [removingKey, setRemovingKey] = useState<string | null>(null);
@@ -173,35 +173,24 @@ export function ProfileEditForm({
             currentSocialLinks={currentSocialLinks}
             lockedSocialKeys={lockedSocialKeys}
             onRemoveSocialLink={handleRemoveSocialLink}
-            onAddSocialLinkClick={() => setIsAddModalOpen(true)}
-            onEditSocialLinkClick={(key) => setEditModalKey(key)}
+            onAddSocialLinkClick={() => setModalState({ type: "add" })}
+            onEditSocialLinkClick={(key) => setModalState({ type: "edit", key })}
             fieldErrors={fieldErrors}
             removingKey={removingKey}
           />
         </section>
       </div>
 
-      {/* 追加モーダル */}
-      {isAddModalOpen && (
+      {modalState && (
         <AddSocialLinkModal
           existingKeys={Object.keys(currentSocialLinks)}
-          mode="add"
-          onClose={() => setIsAddModalOpen(false)}
-          onSaved={handleSocialLinkSaved}
-        />
-      )}
-
-      {/* 編集モーダル */}
-      {editModalKey && (
-        <AddSocialLinkModal
-          existingKeys={Object.keys(currentSocialLinks)}
-          mode="edit"
-          initialPlatformKey={editModalKey}
-          initialValue={currentSocialLinks[editModalKey] ?? ""}
-          onClose={() => setEditModalKey(null)}
+          mode={modalState.type}
+          initialPlatformKey={modalState.type === "edit" ? modalState.key : undefined}
+          initialValue={modalState.type === "edit" ? (currentSocialLinks[modalState.key] ?? "") : undefined}
+          onClose={() => setModalState(null)}
           onSaved={(key, value) => {
             handleSocialLinkSaved(key, value);
-            setEditModalKey(null);
+            setModalState(null);
           }}
         />
       )}
