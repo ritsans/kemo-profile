@@ -400,6 +400,29 @@ export async function updateSocialLink(
 }
 
 /**
+ * SNSリンク順序保存 Server Action
+ */
+export async function reorderSocialLinks(
+  order: string[],
+): Promise<ActionResult> {
+  const auth = await requireUser();
+  if (!auth.ok) return auth.result;
+
+  const { error } = await auth.supabase
+    .from("profiles")
+    .update({ social_links_order: order })
+    .eq("owner_user_id", auth.userId);
+
+  if (error) {
+    console.error("reorderSocialLinks error:", error);
+    return { success: false, error: UPDATE_ERROR_MESSAGE };
+  }
+
+  revalidatePath("/mypage");
+  return { success: true, data: undefined };
+}
+
+/**
  * SNSリンク削除 Server Action
  * X OAuth自動設定値（`x`）は削除不可
  */

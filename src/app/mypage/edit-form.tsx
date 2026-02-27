@@ -4,8 +4,8 @@
  * マイページ編集エリアの親コンテナ。
  * 状態管理（保存・差分・離脱保護）と、プレビュー/編集ペインのレイアウトを担当する。
  */
-import { useActionState, useEffect, useState, useTransition } from "react";
-import { removeSocialLink, updateProfile } from "@/app/actions/profile";
+import { useActionState, useCallback, useEffect, useState, useTransition } from "react";
+import { removeSocialLink, reorderSocialLinks, updateProfile } from "@/app/actions/profile";
 import type { ProfileUpdateResult } from "@/lib/types/action";
 import { AddSocialLinkModal } from "./add-social-link-modal";
 import { ProfileEditFields } from "./profile-edit-fields";
@@ -15,6 +15,7 @@ interface ProfileEditFormProps {
   displayName: string;
   bio: string | null;
   socialLinks: Record<string, string>;
+  socialLinksOrder: string[] | null;
   avatarUrl: string | null;
   previewPath: string;
   lockedSocialKeys: string[];
@@ -34,10 +35,25 @@ function paneSectionClass(isVisible: boolean): string {
   return isVisible ? "block" : "hidden lg:block";
 }
 
+/** 保存済みの順序 or social_links のキー順でフォールバック */
+function buildInitialOrder(
+  socialLinks: Record<string, string>,
+  savedOrder: string[] | null,
+): string[] {
+  if (savedOrder && savedOrder.length > 0) {
+    // 保存済み順序を優先しつつ、存在しないキーを除外し、新規キーを末尾に追加
+    const existing = savedOrder.filter((k) => k in socialLinks);
+    const added = Object.keys(socialLinks).filter((k) => !existing.includes(k));
+    return [...existing, ...added];
+  }
+  return Object.keys(socialLinks);
+}
+
 export function ProfileEditForm({
   displayName,
   bio,
   socialLinks,
+  socialLinksOrder,
   avatarUrl,
   previewPath,
   lockedSocialKeys,
@@ -51,6 +67,11 @@ export function ProfileEditForm({
   const [currentSocialLinks, setCurrentSocialLinks] =
     useState<Record<string, string>>(socialLinks);
 
+  // SNSリンクの表示順序
+  const [currentOrder, setCurrentOrder] = useState<string[]>(() =>
+    buildInitialOrder(socialLinks, socialLinksOrder),
+  );
+
   // 差分検知用の基準値（最後に保存された値）
   const [savedDisplayName, setSavedDisplayName] = useState(displayName);
   const [savedBio, setSavedBio] = useState(bio ?? "");
@@ -61,6 +82,7 @@ export function ProfileEditForm({
   // 削除処理中のキー
   const [removingKey, setRemovingKey] = useState<string | null>(null);
   const [, startRemoveTransition] = useTransition();
+  const [, startReorderTransition] = useTransition();
 
   const [state, formAction, isPending] = useActionState<
     ProfileUpdateResult | null,
@@ -99,6 +121,10 @@ export function ProfileEditForm({
   // SNSリンク追加・編集の保存後: ローカル状態を更新してモーダルを閉じる
   function handleSocialLinkSaved(key: string, value: string) {
     setCurrentSocialLinks((prev) => ({ ...prev, [key]: value }));
+    // 新規キーはorderの末尾に追加
+    setCurrentOrder((prev) =>
+      prev.includes(key) ? prev : [...prev, key],
+    );
     setModalState(null);
   }
 
@@ -117,8 +143,17 @@ export function ProfileEditForm({
         const { [key]: _, ...rest } = prev;
         return rest;
       });
+      setCurrentOrder((prev) => prev.filter((k) => k !== key));
     });
   }
+
+  // SNSリンク並び替え
+  const handleReorderSocialLinks = useCallback((newOrder: string[]) => {
+    setCurrentOrder(newOrder);
+    startReorderTransition(async () => {
+      await reorderSocialLinks(newOrder);
+    });
+  }, []);
 
   const fieldErrors = state && !state.success ? state.fieldErrors : {};
   const previewDisplayName =
@@ -132,32 +167,22 @@ export function ProfileEditForm({
         <div className="grid grid-cols-2 gap-1 text-sm font-medium">
           <button
             type="button"
-            onClick={() => setMobilePane("preview")}
-            className={paneTabClass(mobilePane === "preview")}
-          >
-            プレビュー
-          </button>
-          <button
-            type="button"
             onClick={() => setMobilePane("edit")}
             className={paneTabClass(mobilePane === "edit")}
           >
             編集
           </button>
+          <button
+            type="button"
+            onClick={() => setMobilePane("preview")}
+            className={paneTabClass(mobilePane === "preview")}
+          >
+            プレビュー
+          </button>
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className={paneSectionClass(mobilePane === "preview")}>
-          <ProfilePreviewCard
-            avatarUrl={avatarUrl}
-            previewDisplayName={previewDisplayName}
-            previewBio={previewBio}
-            previewSocialLinks={currentSocialLinks}
-            previewPath={previewPath}
-          />
-        </section>
-
+      <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
         <section className={paneSectionClass(mobilePane === "edit")}>
           <ProfileEditFields
             savedMessage={savedMessage}
@@ -171,14 +196,27 @@ export function ProfileEditForm({
             currentBio={currentBio}
             setCurrentBio={setCurrentBio}
             currentSocialLinks={currentSocialLinks}
+            socialLinksOrder={currentOrder}
             lockedSocialKeys={lockedSocialKeys}
             onRemoveSocialLink={handleRemoveSocialLink}
             onAddSocialLinkClick={() => setModalState({ type: "add" })}
             onEditSocialLinkClick={(key) =>
               setModalState({ type: "edit", key })
             }
+            onReorderSocialLinks={handleReorderSocialLinks}
             fieldErrors={fieldErrors}
             removingKey={removingKey}
+          />
+        </section>
+
+        <section className={paneSectionClass(mobilePane === "preview")}>
+          <ProfilePreviewCard
+            avatarUrl={avatarUrl}
+            previewDisplayName={previewDisplayName}
+            previewBio={previewBio}
+            previewSocialLinks={currentSocialLinks}
+            previewSocialLinksOrder={currentOrder}
+            previewPath={previewPath}
           />
         </section>
       </div>

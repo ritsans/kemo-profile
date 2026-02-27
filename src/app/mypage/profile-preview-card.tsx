@@ -11,6 +11,7 @@ interface ProfilePreviewCardProps {
   previewDisplayName: string;
   previewBio: string;
   previewSocialLinks: Record<string, string>;
+  previewSocialLinksOrder?: string[];
   previewPath: string;
 }
 
@@ -19,14 +20,12 @@ export function ProfilePreviewCard({
   previewDisplayName,
   previewBio,
   previewSocialLinks,
+  previewSocialLinksOrder,
   previewPath,
 }: ProfilePreviewCardProps) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm lg:sticky lg:top-8">
       <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-gray-900">
-          プロフィールプレビュー
-        </h2>
         <a
           href={previewPath}
           target="_blank"
@@ -42,8 +41,10 @@ export function ProfilePreviewCard({
         bio={previewBio || null}
         avatarUrl={avatarUrl}
         socialLinks={previewSocialLinks}
+        socialLinksOrder={previewSocialLinksOrder}
         showBioPlaceholder={true}
         showSocialEmptyState={true}
+        compact={true}
         className="!rounded-none !bg-transparent !p-0 !shadow-none"
       />
     </div>

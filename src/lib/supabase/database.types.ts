@@ -60,6 +60,7 @@ export type Database = {
           profile_id: string;
           slug: string | null;
           social_links: Json;
+          social_links_order: string[] | null;
           updated_at: string;
         };
         Insert: {
@@ -72,6 +73,7 @@ export type Database = {
           profile_id: string;
           slug?: string | null;
           social_links?: Json;
+          social_links_order?: string[] | null;
           updated_at?: string;
         };
         Update: {
@@ -84,6 +86,7 @@ export type Database = {
           profile_id?: string;
           slug?: string | null;
           social_links?: Json;
+          social_links_order?: string[] | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -101,6 +104,7 @@ export type Database = {
           display_name: string;
           profile_id: string;
           social_links: Json;
+          social_links_order: string[] | null;
         }[];
       };
       public_get_profile_by_slug: {
@@ -112,6 +116,7 @@ export type Database = {
           profile_id: string;
           slug: string;
           social_links: Json;
+          social_links_order: string[] | null;
         }[];
       };
     };

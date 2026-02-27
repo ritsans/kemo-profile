@@ -8,6 +8,7 @@ interface ProfileData {
   avatar_url: string | null;
   bio: string | null;
   social_links: Record<string, string>;
+  social_links_order: string[] | null;
   slug: string | null;
 }
 
@@ -37,7 +38,7 @@ export default async function ProfilePage({ params }: PageProps) {
   const profilePromise = isProfileId
     ? supabase
         .from("profiles")
-        .select("profile_id, display_name, avatar_url, bio, social_links, slug")
+        .select("profile_id, display_name, avatar_url, bio, social_links, social_links_order, slug")
         .eq("profile_id", profile_id)
         .single()
     : supabase.rpc("public_get_profile_by_slug", {
@@ -70,6 +71,7 @@ export default async function ProfilePage({ params }: PageProps) {
           bio={profile.bio}
           avatarUrl={profile.avatar_url}
           socialLinks={profile.social_links}
+          socialLinksOrder={profile.social_links_order ?? undefined}
           showBioPlaceholder={false}
           showSocialEmptyState={false}
         />

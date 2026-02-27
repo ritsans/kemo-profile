@@ -1,10 +1,9 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { logout } from "@/app/actions/auth";
-import { Button } from "@/components/ui/button";
 import { getOAuthErrorMessage } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { generateSuggestedSlug } from "@/lib/utils/slug";
+import { MypageHeader } from "@/components/profile/mypage-header";
 import { ProfileEditForm } from "./edit-form";
 import { LinkedProvidersCard } from "./linked-providers-card";
 import { ShareSection } from "./share-section";
@@ -36,7 +35,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "profile_id, display_name, avatar_url, bio, social_links, slug, onboarding_completed",
+      "profile_id, display_name, avatar_url, bio, social_links, social_links_order, slug, onboarding_completed",
     )
     .eq("owner_user_id", user.id)
     .single();
@@ -75,12 +74,9 @@ export default async function MyPage({ searchParams }: MyPageProps) {
     : [];
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6 sm:py-8">
-      <div className="mx-auto max-w-6xl">
-        <h1 className="mb-6 text-2xl font-bold text-gray-900 sm:mb-8 sm:text-3xl">
-          マイページ
-        </h1>
-
+    <div className="min-h-screen bg-gray-50">
+      <MypageHeader />
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
         {errorMessage && (
           <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">
             {errorMessage}
@@ -93,6 +89,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
             displayName={profile.display_name}
             bio={profile.bio}
             socialLinks={(profile.social_links ?? {}) as Record<string, string>}
+            socialLinksOrder={profile.social_links_order ?? null}
             avatarUrl={profile.avatar_url}
             previewPath={profilePath}
             lockedSocialKeys={lockedSocialKeys}
@@ -109,17 +106,6 @@ export default async function MyPage({ searchParams }: MyPageProps) {
         <div className="mb-6">
           <SlugCard slug={suggestedSlug} />
         </div>
-
-        {/* ログアウトボタン */}
-        <form action={logout} className="flex justify-end">
-          <Button
-            type="submit"
-            variant="secondary"
-            className="w-full sm:w-auto"
-          >
-            ログアウト
-          </Button>
-        </form>
       </div>
     </div>
   );

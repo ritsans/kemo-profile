@@ -1,6 +1,22 @@
 "use client";
 
-import { MoreHorizontalIcon } from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { ExternalLinkIcon, GripVerticalIcon, MoreHorizontalIcon } from "lucide-react";
 /**
  * プロフィール編集フォームのフィールド群。
  * 右ペインの入力UIとエラー表示のみを担当する。
@@ -29,6 +45,8 @@ interface ProfileEditFieldsProps {
   setCurrentBio: (value: string) => void;
   /** 現在登録済みの social_links */
   currentSocialLinks: Record<string, string>;
+  /** SNSリンクの表示順序（キーの配列） */
+  socialLinksOrder: string[];
   /** ロック済みキー（表示のみ・削除不可） */
   lockedSocialKeys: string[];
   /** 削除ボタン押下 */
@@ -37,11 +55,138 @@ interface ProfileEditFieldsProps {
   onAddSocialLinkClick: () => void;
   /** 編集ボタン押下 */
   onEditSocialLinkClick: (key: string) => void;
+  /** 並び替え確定時 */
+  onReorderSocialLinks: (newOrder: string[]) => void;
   fieldErrors: Partial<Record<string, string>>;
   /** 削除処理中のキー（削除ボタンを無効化） */
   removingKey: string | null;
 }
 
+// ────────────────────────────────────────────────────────
+// 各SNSリンク行（Sortable Item）
+// ────────────────────────────────────────────────────────
+interface SortableSnsItemProps {
+  id: string;
+  value: string;
+  isLocked: boolean;
+  isRemoving: boolean;
+  isPending: boolean;
+  onEdit: () => void;
+  onRemove: () => void;
+}
+
+function SortableSnsItem({
+  id,
+  value,
+  isLocked,
+  isRemoving,
+  isPending,
+  onEdit,
+  onRemove,
+}: SortableSnsItemProps) {
+  const platform = getPlatform(id);
+  const Icon = platform?.icon;
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3"
+    >
+      {/* ドラッグハンドル */}
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="flex h-8 w-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-gray-300 hover:text-gray-500 active:cursor-grabbing"
+        aria-label="ドラッグして並び替え"
+      >
+        <GripVerticalIcon className="h-4 w-4" aria-hidden="true" />
+      </button>
+
+      {/* プラットフォームアイコンボックス */}
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-gray-50">
+        {Icon ? (
+          <Icon className="h-5 w-5 text-gray-700" aria-hidden="true" />
+        ) : (
+          <span className="text-sm font-bold text-gray-700">
+            {platform?.label[0]}
+          </span>
+        )}
+      </div>
+
+      {/* 2行テキスト */}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-gray-900">
+          {platform?.label} · @{value}
+        </p>
+        <p className="truncate text-xs text-gray-400">
+          {value}
+          {isLocked && "（OAuth連携）"}
+        </p>
+      </div>
+
+      {/* 外部リンク + メニュー */}
+      <div className="flex shrink-0 items-center gap-1">
+        {platform?.profileUrl && (
+          <a
+            href={platform.profileUrl(value)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:text-gray-600"
+            aria-label={`${platform.label}を開く`}
+          >
+            <ExternalLinkIcon className="h-4 w-4" aria-hidden="true" />
+          </a>
+        )}
+        {!isLocked && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                disabled={isPending || isRemoving}
+                aria-label="メニューを開く"
+              >
+                <MoreHorizontalIcon aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}>編集</DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={onRemove}
+                disabled={isRemoving}
+              >
+                {isRemoving ? "削除中..." : "削除"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+    </li>
+  );
+}
+
+// ────────────────────────────────────────────────────────
+// メインコンポーネント
+// ────────────────────────────────────────────────────────
 export function ProfileEditFields({
   savedMessage,
   isDirty,
@@ -54,24 +199,37 @@ export function ProfileEditFields({
   currentBio,
   setCurrentBio,
   currentSocialLinks,
+  socialLinksOrder,
   lockedSocialKeys,
   onRemoveSocialLink,
   onAddSocialLinkClick,
   onEditSocialLinkClick,
+  onReorderSocialLinks,
   fieldErrors,
   removingKey,
 }: ProfileEditFieldsProps) {
-  const registeredEntries = Object.entries(currentSocialLinks);
+  // socialLinksOrder に含まれるキーのうち currentSocialLinks に存在するものだけ表示
+  const orderedKeys = socialLinksOrder.filter((k) => k in currentSocialLinks);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 5 },
+    }),
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = orderedKeys.indexOf(active.id as string);
+    const newIndex = orderedKeys.indexOf(over.id as string);
+    const newOrder = arrayMove(orderedKeys, oldIndex, newIndex);
+    onReorderSocialLinks(newOrder);
+  }
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-gray-900">
-          プロフィール編集
-        </h2>
-        <SaveStatus saved={savedMessage} dirty={isDirty} />
-      </div>
-
       <form action={formAction} className="space-y-5">
         <input
           type="hidden"
@@ -136,69 +294,36 @@ export function ProfileEditFields({
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
             SNS Links
           </p>
-          {registeredEntries.length === 0 ? (
+          {orderedKeys.length === 0 ? (
             <p className="mb-2 text-sm text-gray-400">
               SNSリンクはまだ登録されていません
             </p>
           ) : (
-            <ul className="mb-3 space-y-2">
-              {registeredEntries.map(([key, value]) => {
-                const platform = getPlatform(key);
-                const isLocked = lockedSocialKeys.includes(key);
-                const isRemoving = removingKey === key;
-                const Icon = platform?.icon;
-                return (
-                  <li
-                    key={key}
-                    className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
-                  >
-                    {Icon && (
-                      <Icon
-                        className="h-4 w-4 shrink-0 text-gray-600"
-                        aria-hidden="true"
-                      />
-                    )}
-                    <span className="min-w-0 flex-1 truncate text-sm text-gray-800">
-                      @{value}
-                      {isLocked && (
-                        <span className="ml-1 text-xs text-gray-400">
-                          （OAuth連携）
-                        </span>
-                      )}
-                    </span>
-                    {!isLocked && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            disabled={isPending || isRemoving}
-                            aria-label="メニューを開く"
-                          >
-                            <MoreHorizontalIcon aria-hidden="true" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => onEditSocialLinkClick(key)}
-                          >
-                            編集
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => onRemoveSocialLink(key)}
-                            disabled={isRemoving}
-                          >
-                            {isRemoving ? "削除中..." : "削除"}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={orderedKeys}
+                strategy={verticalListSortingStrategy}
+              >
+                <ul className="mb-3 space-y-2">
+                  {orderedKeys.map((key) => (
+                    <SortableSnsItem
+                      key={key}
+                      id={key}
+                      value={currentSocialLinks[key]}
+                      isLocked={lockedSocialKeys.includes(key)}
+                      isRemoving={removingKey === key}
+                      isPending={isPending}
+                      onEdit={() => onEditSocialLinkClick(key)}
+                      onRemove={() => onRemoveSocialLink(key)}
+                    />
+                  ))}
+                </ul>
+              </SortableContext>
+            </DndContext>
           )}
           <Button
             type="button"
@@ -221,7 +346,7 @@ export function ProfileEditFields({
   );
 }
 
-/** 保存状態に応じたステータスメッセージ */
+/** 保存状態に応じたステータスメッセージ
 function SaveStatus({ saved, dirty }: { saved: boolean; dirty: boolean }) {
   if (saved) {
     return <p className="text-sm text-green-600">保存しました</p>;
@@ -231,3 +356,4 @@ function SaveStatus({ saved, dirty }: { saved: boolean; dirty: boolean }) {
   }
   return <p className="text-sm text-gray-400">保存済み</p>;
 }
+*/
