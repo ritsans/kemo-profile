@@ -4,8 +4,18 @@
  * マイページ編集エリアの親コンテナ。
  * 状態管理（保存・差分・離脱保護）と、プレビュー/編集ペインのレイアウトを担当する。
  */
-import { useActionState, useCallback, useEffect, useState, useTransition } from "react";
-import { removeSocialLink, reorderSocialLinks, updateProfile } from "@/app/actions/profile";
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useState,
+  useTransition,
+} from "react";
+import {
+  removeSocialLink,
+  reorderSocialLinks,
+  updateProfile,
+} from "@/app/actions/profile";
 import type { ProfileUpdateResult } from "@/lib/types/action";
 import { AddSocialLinkModal } from "./add-social-link-modal";
 import { ProfileEditFields } from "./profile-edit-fields";
@@ -17,7 +27,6 @@ interface ProfileEditFormProps {
   socialLinks: Record<string, string>;
   socialLinksOrder: string[] | null;
   avatarUrl: string | null;
-  previewPath: string;
   lockedSocialKeys: string[];
 }
 
@@ -55,7 +64,6 @@ export function ProfileEditForm({
   socialLinks,
   socialLinksOrder,
   avatarUrl,
-  previewPath,
   lockedSocialKeys,
 }: ProfileEditFormProps) {
   const [mobilePane, setMobilePane] = useState<"preview" | "edit">("preview");
@@ -122,9 +130,7 @@ export function ProfileEditForm({
   function handleSocialLinkSaved(key: string, value: string) {
     setCurrentSocialLinks((prev) => ({ ...prev, [key]: value }));
     // 新規キーはorderの末尾に追加
-    setCurrentOrder((prev) =>
-      prev.includes(key) ? prev : [...prev, key],
-    );
+    setCurrentOrder((prev) => (prev.includes(key) ? prev : [...prev, key]));
     setModalState(null);
   }
 
@@ -216,7 +222,6 @@ export function ProfileEditForm({
             previewBio={previewBio}
             previewSocialLinks={currentSocialLinks}
             previewSocialLinksOrder={currentOrder}
-            previewPath={previewPath}
           />
         </section>
       </div>

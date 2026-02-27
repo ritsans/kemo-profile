@@ -218,7 +218,91 @@ Design doc: `docs/plans/2026-02-24-social-link-step-add-flow-plan.md`
   - URL入力でも保存値が正規化される
   - 追加成功後にモーダルが閉じ、編集画面に反映される
   - 削除ボタンでSNSが削除される
+
+---
+
+## 13. SNSリンク編集UIをLinktree風に改善
+
+- [ ] SNS行をカード化してその場編集
+  - 変更先: `src/app/mypage/profile-edit-fields.tsx`
+  - 各行で `Input` を表示（または1タップ展開）し、入力・削除を行内で完結
+- [ ] 追加導線を簡略化
+  - 変更先: `src/app/mypage/add-social-link-modal.tsx`
+  - 候補選択後に即1行追加し、編集画面上で入力
+- [ ] 保存体験を即時反映化
+  - 変更先: `src/app/mypage/edit-form.tsx`
+  - 楽観更新 + デバウンス保存 + 行単位エラー表示
   - ロック済みSNSの削除ボタンは表示されない
+
+### 12.7 SNSリンク並び替え・マイページUI調整
+
+- [x] `social_links_order` 対応を追加
+  - `profiles` SELECT/RPC の取得項目に `social_links_order` を追加
+  - `src/lib/supabase/database.types.ts` に `social_links_order` を反映
+- [x] SNSリンク並び替え保存アクションを追加
+  - `src/app/actions/profile.ts` に `reorderSocialLinks(order: string[])` を追加
+  - 並び替え後に `social_links_order` を更新し `revalidatePath("/mypage")` を実行
+- [x] 編集画面で DnD 並び替えを実装
+  - `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` を追加
+  - `src/app/mypage/profile-edit-fields.tsx` でドラッグ＆ドロップ並び替え UI を実装
+  - `src/app/mypage/edit-form.tsx` で並び順状態と保存処理を実装
+- [x] プレビュー/公開表示で並び順を反映
+  - `ProfileCardView` に `socialLinksOrder` prop を追加して表示順制御
+  - `profile-preview-card.tsx` / `p/[profile_id]/page.tsx` から順序を渡すよう更新
+- [x] マイページヘッダーを追加しログアウト導線を整理
+  - `src/components/profile/mypage-header.tsx` を追加
+  - モバイル: ハンバーガーメニュー、PC: 右上ログアウトボタン
+
+## 13. 実装予定（次スプリント）
+
+### 13.1 公開プロフィールのQR導線をヘッダーへ移動
+
+- [ ] 公開プロフィールのヘッダーに「QRコード表示」ボタンを追加
+- [ ] プロフィールカード内のQRコード表示ボタンを削除
+- [ ] モバイル/PCでヘッダー導線の表示・操作性を確認
+
+### 13.2 オプション画面の新設（設定の整理）
+
+- [ ] オプション画面を新設し、プロフィール編集と設定系機能を分離
+- [ ] 「外部ログイン連携」をプロフィール編集画面からオプション画面へ移動
+- [ ] 「カスタムURL」をプロフィール編集画面からオプション画面へ移動
+- [ ] マイページからオプション画面への導線を追加
+
+### 13.3 プロフィールページのBASIC表示と編集状態切替
+
+- [ ] プロフィールページの BASIC 状態を閲覧モードとして実装
+  - 現在のアバター・表示名・プロフィール文章を平文でそのまま表示
+- [ ] 「プロフィールを編集」ボタン押下で編集可能状態へ切替
+  - 閲覧モードから編集用レイアウトへ切り替える
+  - 入力しやすいフォーム構成（項目間余白・操作導線）に変更する
+- [ ] 編集状態で「キャンセル」「保存」ボタンを表示
+  - キャンセルで閲覧モードに戻る（未保存変更時は確認導線を検討）
+  - 保存で更新処理を実行し、成功後は閲覧モードへ戻す
+
+### 13.4 バッジリボン機能（最大3つ選択）
+
+- [ ] 仕様追加: バッジリボン機能を `docs/spec.md` に反映
+  - 用途: 自己属性タグ（例: `ARTIST`, `VTUBER`, `STREAMER`）
+  - 制約: 定義済み候補から任意選択、最大3件まで
+- [ ] DBスキーマ追加（profiles）
+  - `badge_ribbons` カラムを追加（候補: `text[]` または enum 配列）
+  - 最大3件制約の追加（CHECK制約）
+  - 既存プロフィール向けデフォルト値を設定（空配列）
+  - Supabase 型定義 (`database.types.ts`) を更新
+- [ ] バッジ候補定義を追加
+  - 候補一覧を定数化（`ARTIST`, `VTUBER`, `STREAMER` ほか追加候補）
+  - 表示ラベル/内部値の管理方針を統一
+- [ ] プロフィール編集UIに選択機能を追加
+  - 最大3件まで選択できる UI（チェック or トグル）
+  - 4件目選択時は無効化またはエラー表示
+  - 保存時に `badge_ribbons` を更新
+- [ ] 表示UIにリボン描画を追加
+  - 公開プロフィールカード下部に、選択済みバッジの文字入りリボンを表示
+  - マイページプレビューにも同様の表示を反映
+- [ ] 検証
+  - 最大3件制約が UI/Server/DB の全層で守られる
+  - 未選択時はリボン非表示
+  - 既存ユーザーでの後方互換（null/空配列）を確認
 
 ---
 

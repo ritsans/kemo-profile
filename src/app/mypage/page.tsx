@@ -1,9 +1,9 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { MypageHeader } from "@/components/profile/mypage-header";
 import { getOAuthErrorMessage } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { generateSuggestedSlug } from "@/lib/utils/slug";
-import { MypageHeader } from "@/components/profile/mypage-header";
 import { ProfileEditForm } from "./edit-form";
 import { LinkedProvidersCard } from "./linked-providers-card";
 import { ShareSection } from "./share-section";
@@ -75,7 +75,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <MypageHeader />
+      <MypageHeader publicPath={profilePath} />
       <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
         {errorMessage && (
           <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">
@@ -91,7 +91,6 @@ export default async function MyPage({ searchParams }: MyPageProps) {
             socialLinks={(profile.social_links ?? {}) as Record<string, string>}
             socialLinksOrder={profile.social_links_order ?? null}
             avatarUrl={profile.avatar_url}
-            previewPath={profilePath}
             lockedSocialKeys={lockedSocialKeys}
           />
         </div>
