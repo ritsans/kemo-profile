@@ -38,7 +38,9 @@ export default async function ProfilePage({ params }: PageProps) {
   const profilePromise = isProfileId
     ? supabase
         .from("profiles")
-        .select("profile_id, display_name, avatar_url, bio, social_links, social_links_order, slug")
+        .select(
+          "profile_id, display_name, avatar_url, bio, social_links, social_links_order, slug",
+        )
         .eq("profile_id", profile_id)
         .single()
     : supabase.rpc("public_get_profile_by_slug", {

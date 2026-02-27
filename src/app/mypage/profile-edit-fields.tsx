@@ -1,22 +1,26 @@
 "use client";
 
+import type { DragEndEvent } from "@dnd-kit/core";
 import {
+  closestCenter,
   DndContext,
   PointerSensor,
   TouchSensor,
-  closestCenter,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import type { DragEndEvent } from "@dnd-kit/core";
 import {
-  SortableContext,
   arrayMove,
+  SortableContext,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ExternalLinkIcon, GripVerticalIcon, MoreHorizontalIcon } from "lucide-react";
+import {
+  ExternalLinkIcon,
+  GripVerticalIcon,
+  MoreHorizontalIcon,
+} from "lucide-react";
 /**
  * プロフィール編集フォームのフィールド群。
  * 右ペインの入力UIとエラー表示のみを担当する。
@@ -33,8 +37,6 @@ import { Label } from "@/components/ui/label";
 import { getPlatform } from "@/lib/social-platforms";
 
 interface ProfileEditFieldsProps {
-  savedMessage: boolean;
-  isDirty: boolean;
   isPending: boolean;
   formAction: (formData: FormData) => void | Promise<void>;
   originalDisplayName: string;
@@ -188,8 +190,6 @@ function SortableSnsItem({
 // メインコンポーネント
 // ────────────────────────────────────────────────────────
 export function ProfileEditFields({
-  savedMessage,
-  isDirty,
   isPending,
   formAction,
   originalDisplayName,

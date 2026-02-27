@@ -67,8 +67,6 @@ export function ProfileEditForm({
   lockedSocialKeys,
 }: ProfileEditFormProps) {
   const [mobilePane, setMobilePane] = useState<"preview" | "edit">("preview");
-  const [savedMessage, setSavedMessage] = useState(false);
-
   // フォーム内の現在値
   const [currentDisplayName, setCurrentDisplayName] = useState(displayName);
   const [currentBio, setCurrentBio] = useState(bio ?? "");
@@ -108,10 +106,6 @@ export function ProfileEditForm({
     setCurrentBio(trimmedBio);
     setSavedDisplayName(trimmedName);
     setSavedBio(trimmedBio);
-
-    setSavedMessage(true);
-    const timer = setTimeout(() => setSavedMessage(false), 2000);
-    return () => clearTimeout(timer);
   }, [state, currentDisplayName, currentBio]);
 
   // dirty チェック（social_links, slug は Server Action で個別保存のため除外）
@@ -191,8 +185,6 @@ export function ProfileEditForm({
       <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
         <section className={paneSectionClass(mobilePane === "edit")}>
           <ProfileEditFields
-            savedMessage={savedMessage}
-            isDirty={isDirty}
             isPending={isPending}
             formAction={formAction}
             originalDisplayName={savedDisplayName}
