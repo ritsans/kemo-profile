@@ -16,6 +16,7 @@ See `docs/spec.md` for complete MVP specification. for the TODOs to be addressed
 - **Package Manager**: pnpm
 - **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS v4
+- **UI Components**: shadcn/ui (New York style, RSC enabled)
 - **Linter/Formatter**: Biome *(not ESLint/Prettier)*
 - **Database**: Supabase (Cloud project via Supabase CLI)
 
@@ -122,13 +123,20 @@ All decorative SVG icons must include `aria-hidden="true"` to satisfy Biome's `a
 
 Reusable SVG icon components are stored in `src/components/icons/`.
 
+### UI Components (shadcn/ui)
+
+Use **shadcn/ui** components (`src/components/ui/`) instead of bare HTML elements. Never use raw `<button>` or `<label>`.
+
+- Add components: `pnpm dlx shadcn@latest add <component> --overwrite`
+- `src/components/ui/` is excluded from Biome checks.
+
 ### Form Input Components
 
 **IMPORTANT**: Do NOT use bare `<input>` or `<textarea>` elements. Always use the shared components from `src/components/ui/input.tsx`.
 
 `import { Input, Textarea } from "@/components/ui/input";`
 
-To change the shared form style, edit `INPUT_CLASS` in `src/components/ui/input.tsx` — it applies to all forms at once.
+To change the shared form style, edit `src/components/ui/input.tsx` — it applies to all forms at once.
 
 ## Architecture
 

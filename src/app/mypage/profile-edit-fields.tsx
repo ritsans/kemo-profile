@@ -1,11 +1,19 @@
 "use client";
 
+import { MoreHorizontalIcon } from "lucide-react";
 /**
  * プロフィール編集フォームのフィールド群。
  * 右ペインの入力UIとエラー表示のみを担当する。
  */
-import { DropdownMenu } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input, Textarea } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { getPlatform } from "@/lib/social-platforms";
 
 interface ProfileEditFieldsProps {
@@ -79,12 +87,9 @@ export function ProfileEditFields({
           </p>
           <div className="space-y-4">
             <div>
-              <label
-                htmlFor="display_name"
-                className="mb-1 block text-sm font-medium text-gray-700"
-              >
+              <Label htmlFor="display_name" className="mb-1">
                 Name <span className="text-red-500">*</span>
-              </label>
+              </Label>
               <Input
                 type="text"
                 id="display_name"
@@ -103,12 +108,9 @@ export function ProfileEditFields({
             </div>
 
             <div>
-              <label
-                htmlFor="bio"
-                className="mb-1 block text-sm font-medium text-gray-700"
-              >
+              <Label htmlFor="bio" className="mb-1">
                 Bio
-              </label>
+              </Label>
               <Textarea
                 id="bio"
                 name="bio"
@@ -165,44 +167,54 @@ export function ProfileEditFields({
                       )}
                     </span>
                     {!isLocked && (
-                      <DropdownMenu
-                        disabled={isPending || isRemoving}
-                        items={[
-                          {
-                            label: "編集",
-                            onClick: () => onEditSocialLinkClick(key),
-                          },
-                          {
-                            label: isRemoving ? "削除中..." : "削除",
-                            variant: "danger",
-                            onClick: () => onRemoveSocialLink(key),
-                          },
-                        ]}
-                      />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-xs"
+                            disabled={isPending || isRemoving}
+                            aria-label="メニューを開く"
+                          >
+                            <MoreHorizontalIcon aria-hidden="true" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => onEditSocialLinkClick(key)}
+                          >
+                            編集
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => onRemoveSocialLink(key)}
+                            disabled={isRemoving}
+                          >
+                            {isRemoving ? "削除中..." : "削除"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </li>
                 );
               })}
             </ul>
           )}
-          <button
+          <Button
             type="button"
+            variant="link"
             onClick={onAddSocialLinkClick}
             disabled={isPending}
-            className="flex items-center gap-1 text-sm text-blue-600 underline decoration-dashed decoration-blue-400 underline-offset-4 hover:text-blue-800 disabled:opacity-40"
+            className="h-auto p-0 text-blue-600 decoration-dashed decoration-blue-400 underline-offset-4"
           >
             <span aria-hidden="true">+</span> リンクを追加
-          </button>
+          </Button>
         </div>
 
         <div className="flex pt-2">
-          <button
-            type="submit"
-            disabled={isPending}
-            className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400"
-          >
+          <Button type="submit" disabled={isPending} className="flex-1">
             {isPending ? "保存中..." : "保存する"}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

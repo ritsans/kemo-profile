@@ -7,6 +7,13 @@
  */
 import { useRef, useState, useTransition } from "react";
 import { addSocialLink, updateSocialLink } from "@/app/actions/profile";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { getPlatform, SOCIAL_PLATFORMS } from "@/lib/social-platforms";
 
@@ -103,51 +110,41 @@ export function AddSocialLinkModal({
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
-      {/* バックドロップ（クリックで閉じる） */}
-      <button
-        type="button"
-        aria-label="モーダルを閉じる"
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose}
-        tabIndex={-1}
-      />
-      <div className="relative w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+      <DialogContent className="max-w-sm" showCloseButton={false}>
         {/* Step 1: SNS選択 */}
         {step === "select" && (
           <>
-            <h2 className="mb-4 text-base font-semibold text-gray-900">
-              SNSを選択
-            </h2>
+            <DialogHeader>
+              <DialogTitle>SNSを選択</DialogTitle>
+            </DialogHeader>
             {availablePlatforms.length === 0 ? (
               <p className="text-sm text-gray-500">追加できるSNSがありません</p>
             ) : (
               <ul className="space-y-2">
                 {availablePlatforms.map((p) => (
                   <li key={p.key}>
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
                       onClick={() => handleSelectPlatform(p.key)}
-                      className="w-full rounded-lg border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 active:bg-gray-100"
+                      className="w-full justify-start"
                     >
                       {p.label}
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
             )}
-            <div className="mt-5 flex justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="text-sm text-gray-500 hover:text-gray-700"
-              >
+            <div className="flex justify-end">
+              <Button type="button" variant="ghost" onClick={onClose}>
                 キャンセル
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -155,11 +152,11 @@ export function AddSocialLinkModal({
         {/* Step 2: 入力 */}
         {step === "input" && platform && (
           <>
-            <h2 className="mb-4 text-base font-semibold text-gray-900">
-              {platform.label}
-            </h2>
+            <DialogHeader>
+              <DialogTitle>{platform.label}</DialogTitle>
+            </DialogHeader>
 
-            <div className="mb-4">
+            <div>
               <Input
                 ref={inputRef}
                 type="text"
@@ -187,40 +184,42 @@ export function AddSocialLinkModal({
             <div className="flex items-center justify-between gap-2">
               <div className="flex gap-2">
                 {mode === "add" && (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={handleBack}
                     disabled={isPending}
-                    className="text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50"
                   >
                     戻る
-                  </button>
+                  </Button>
                 )}
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={onClose}
                   disabled={isPending}
-                  className="text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50"
                 >
                   キャンセル
-                </button>
+                </Button>
               </div>
-              <button
+              <Button
                 type="button"
+                size="sm"
                 onClick={handleSubmit}
                 disabled={isPending || !inputValue.trim()}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
               >
                 {isPending
                   ? "保存中..."
                   : mode === "add"
                     ? "保存して追加"
                     : "保存"}
-              </button>
+              </Button>
             </div>
           </>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

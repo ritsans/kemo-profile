@@ -7,7 +7,9 @@
  */
 import { useActionState, useEffect, useState } from "react";
 import { updateSlug } from "@/app/actions/profile";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { ActionResult } from "@/lib/types/action";
 
 interface SlugCardProps {
@@ -44,12 +46,9 @@ export function SlugCard({ slug }: SlugCardProps) {
 
       <form action={formAction} className="space-y-3">
         <div>
-          <label
-            htmlFor="slug"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
+          <Label htmlFor="slug" className="mb-1">
             URL スラッグ
-          </label>
+          </Label>
           <Input
             type="text"
             id="slug"
@@ -69,13 +68,9 @@ export function SlugCard({ slug }: SlugCardProps) {
         </div>
 
         <div className="flex">
-          <button
-            type="submit"
-            disabled={isPending}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400"
-          >
+          <Button type="submit" disabled={isPending}>
             {isPending ? "保存中..." : "保存する"}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

@@ -4,6 +4,7 @@
 
 import { useMemo, useState } from "react";
 import { XIcon } from "@/components/icons/x-icon";
+import { Button } from "@/components/ui/button";
 import { getLinkIdentityErrorMessage } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/client";
 
@@ -137,14 +138,14 @@ export function LinkedProvidersCard({ identities }: LinkedProvidersCardProps) {
                 連携済み
               </span>
             ) : (
-              <button
+              <Button
                 type="button"
+                size="sm"
                 onClick={() => handleLink(provider.id)}
                 disabled={isLoading[provider.id]}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 {isLoading[provider.id] ? "連携中..." : "連携する"}
-              </button>
+              </Button>
             )}
           </div>
         ))}

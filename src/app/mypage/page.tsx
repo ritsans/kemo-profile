@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { logout } from "@/app/actions/auth";
+import { Button } from "@/components/ui/button";
 import { getOAuthErrorMessage } from "@/lib/errors/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { generateSuggestedSlug } from "@/lib/utils/slug";
@@ -111,12 +112,13 @@ export default async function MyPage({ searchParams }: MyPageProps) {
 
         {/* ログアウトボタン */}
         <form action={logout} className="flex justify-end">
-          <button
+          <Button
             type="submit"
-            className="w-full rounded-md bg-gray-600 px-4 py-2 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 sm:w-auto"
+            variant="secondary"
+            className="w-full sm:w-auto"
           >
             ログアウト
-          </button>
+          </Button>
         </form>
       </div>
     </div>
