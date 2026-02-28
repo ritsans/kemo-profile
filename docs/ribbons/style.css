@@ -1,0 +1,144 @@
+:root {
+  /* 色はここを差し替える */
+  --ribbon: #4bb063; /* MEMBER green */
+  --text: rgba(255, 255, 255, 0.96);
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP",
+    sans-serif;
+  background: #f6f7f9;
+  padding: 24px;
+}
+
+.wrap {
+  display: grid;
+  gap: 18px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.hint {
+  color: #3a3f45;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/*
+        Ribbon
+        - 上部に「のり代」を連想させる余白
+        - 本体は横長
+        - 下端はギザギザ（ピンキング）
+        - ほんの少し布っぽい質感（ハイライト + 微細ムラ）
+      */
+.ribbon {
+  --ribbon: #4bb063;
+  --text: rgba(255, 255, 255, 0.96);
+
+  position: relative;
+  width: 100%;
+  max-width: 260px;
+  margin: 0;
+}
+
+.ribbon__body {
+  height: 56px;
+  border-radius: 0 0 12px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 0;
+
+  /* 立体感 + 布感（やりすぎない） */
+  background-color: var(--ribbon);
+  background-image: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.18),
+      rgba(255, 255, 255, 0) 42%,
+      rgba(0, 0, 0, 0.12)
+    ),
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.06) 0px,
+      rgba(255, 255, 255, 0.06) 2px,
+      rgba(0, 0, 0, 0.04) 2px,
+      rgba(0, 0, 0, 0.04) 4px
+    );
+
+  /* 用品っぽい控えめな影 */
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.12) inset, 0 6px 18px rgba(0, 0, 0, 0.12);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  clip-path: polygon(
+    0% 0%,
+    97% 0%,
+    100% 12%,
+    97% 25%,
+    100% 38%,
+    97% 50%,
+    100% 62%,
+    97% 75%,
+    100% 88%,
+    97% 100%,
+    0% 100%,
+    3% 88%,
+    0% 75%,
+    3% 62%,
+    0% 50%,
+    3% 38%,
+    0% 25%,
+    3% 12%
+  );
+}
+.ribbon__text {
+  color: var(--text);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  font-size: 20px;
+  text-transform: uppercase;
+
+  /* 文字だけ立体に（本体をカード化しないため） */
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+
+  /* 長い文字でも破綻しにくく */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* デモ用の色バリエーション */
+.g {
+  --ribbon: #4bb063;
+}
+.p {
+  --ribbon: #5b4ab0;
+}
+.w {
+  --ribbon: #e9edf2;
+  --text: rgba(0, 0, 0, 0.72);
+}
+.y {
+  --ribbon: #d9b148;
+  --text: rgba(0, 0, 0, 0.8);
+}
+.k {
+  --ribbon: #1f232b;
+}
+
+.card {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
+}

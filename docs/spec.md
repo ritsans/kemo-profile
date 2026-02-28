@@ -193,9 +193,28 @@ SNSリンクは `profiles.social_links` JSONB カラムに格納する。プラ�
 
 DBマイグレーションやServer Actionの修正は不要。
 
-#### 移行
+### 7.4 バッジリボン
 
-既存の `profiles.x_username` カラムのデータを `social_links.x` に移行する。移行完了後、`x_username` カラムは廃止する。移行はDBマイグレーションスクリプトで行う。
+プロフィール所有者が自分の属性を示すバッジを最大3件選択できる機能。選択済みバッジは公開プロフィールカードにリボン形式で表示される。
+
+#### DBスキーマ
+
+* `profiles.badge`: `text[]`、デフォルト `[]`、最大3件のCHECK制約
+* 保存値は候補定義の内部値のみ許可（表記ゆれ防止）
+
+#### 候補定義
+
+* 候補一覧は定数として一元管理する（例: `ARTIST`, `VTUBER`, `STREAMER`）
+* 表示ラベルと内部値をセットで定義する
+
+#### スタイル参考
+
+`docs/ribbons/` はバッジリボンUIの参考用CSSサンプルとして扱う。
+
+* ラベル例: `MEMBER`, `DEALER` はサンプルであり、このまま使わないこと。
+* リボンの形状・レイアウトは共通スタイルを使う
+* 種別ごとの差分は配色（背景色・文字色）を中心に切り替える
+* 新しい種別を追加する場合は、既存の共通スタイルを再利用し、種別ごとの配色定義のみ追加する
 
 ---
 
@@ -282,16 +301,17 @@ DBマイグレーションやServer Actionの修正は不要。
 
 ### 11.1 クラウドDB
 
-* `profiles(profile_id, owner_user_id, display_name, avatar_url, social_links, bio, slug, onboarding_completed, created_at, updated_at)`
+* `profiles(profile_id, owner_user_id, display_name, avatar_url, social_links, social_links_order, badge, bio, slug, onboarding_completed, created_at, updated_at)`
   * `profile_id`: base62の15文字ランダムID（主キー）
   * `owner_user_id`: プロフィール所有者のuser_id（ユニーク制約）
   * `display_name`: ハンドルネーム（必須、最大50文字）
   * `avatar_url`: アバター画像URL（必須）
   * `social_links`: SNSリンク（JSONB、デフォルト `{}`）。形式: `{"x": "username", "pixiv": "12345", ...}`
+  * `social_links_order`: SNSリンクの表示順（`text[] | null`）。`social_links` のキー一覧を順序付きで保持する。未設定時は `null`（表示順は未定義）
+  * `badge`: バッジリボン（`text[]`、デフォルト `[]`、最大3件のCHECK制約）。定義済み候補から選択した属性タグを格納する（例: `ARTIST`, `VTUBER`, `STREAMER`）
   * `bio`: 自己紹介文（任意、最大160文字）
   * `slug`: カスタムURL識別子（任意、3-20文字、ユニーク制約）
   * `onboarding_completed`: オンボーディング完了フラグ（デフォルト false）
-  * ~~`x_username`~~: **廃止済み（カラム削除待ち）** — `social_links.x` への移行完了（フェーズ1）。カラムはDBに残存中。動作確認後に DROP 予定（フェーズ2）
 * `bookmarks(user_id, profile_id, deleted_at, created_at, updated_at)`
   * 一意制約：`(user_id, profile_id)`
 

@@ -78,7 +78,14 @@ export function ShareSection({ profileUrl }: ShareSectionProps) {
 
   // Web Share API で共有
   const handleShare = async () => {
-    await navigator.share({ url: profileUrl, title: "プロフィール" });
+    try {
+      await navigator.share({ url: profileUrl, title: "プロフィール" });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return; // ユーザーが共有をキャンセル — 正常動作
+      }
+      console.error("Share failed:", error);
+    }
   };
 
   // Web Share API 対応チェック
