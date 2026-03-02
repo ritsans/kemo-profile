@@ -6,7 +6,12 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP",
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    "Noto Sans JP",
     sans-serif;
   background: #f6f7f9;
   padding: 24px;
@@ -56,7 +61,8 @@ body {
 
   /* 立体感 + 布感（やりすぎない） */
   background-color: var(--ribbon);
-  background-image: linear-gradient(
+  background-image:
+    linear-gradient(
       to bottom,
       rgba(255, 255, 255, 0.18),
       rgba(255, 255, 255, 0) 42%,
@@ -71,8 +77,10 @@ body {
     );
 
   /* 用品っぽい控えめな影 */
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.12) inset, 0 6px 18px rgba(0, 0, 0, 0.12);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.12) inset,
+    0 6px 18px rgba(0, 0, 0, 0.12);
 
   display: flex;
   align-items: center;

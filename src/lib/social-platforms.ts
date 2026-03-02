@@ -1,9 +1,14 @@
 import type { ComponentType } from "react";
 
+import { PixivIcon } from "@/components/icons/pixiv-icon";
+import { SkebIcon } from "@/components/icons/skeb-icon";
 import { XIcon } from "@/components/icons/x-icon";
+import { YoutubeIcon } from "@/components/icons/youtube-icon";
 import { normalizeInstagramUsername } from "@/lib/utils/instagram-username";
 import { normalizePixivUserId } from "@/lib/utils/pixiv-user-id";
+import { normalizeSkebUsername } from "@/lib/utils/skeb-username";
 import { normalizeXUsername } from "@/lib/utils/x-username";
+import { normalizeYoutubeChannel } from "@/lib/utils/youtube-channel";
 
 export interface SocialPlatform {
   /** JSONB のキー名。DB に保存される識別子 */
@@ -60,7 +65,29 @@ export const SOCIAL_PLATFORMS: SocialPlatform[] = [
     profileUrl: (v) => `https://www.pixiv.net/users/${v}`,
     normalize: normalizePixivUserId,
     placeholder: "12345678 または https://www.pixiv.net/users/12345678",
+    icon: PixivIcon,
     buttonClass: "bg-blue-500 hover:bg-blue-600 active:bg-blue-700",
+  },
+  {
+    key: "youtube",
+    label: "YouTubeチャンネル",
+    profileUrl: (v) =>
+      v.startsWith("UC")
+        ? `https://www.youtube.com/channel/${v}`
+        : `https://www.youtube.com/@${v}`,
+    normalize: normalizeYoutubeChannel,
+    placeholder: "@channelname または https://www.youtube.com/@channelname",
+    icon: YoutubeIcon,
+    buttonClass: "bg-red-600 hover:bg-red-700 active:bg-red-800",
+  },
+  {
+    key: "skeb",
+    label: "Skeb",
+    profileUrl: (v) => `https://skeb.jp/@${v}`,
+    normalize: normalizeSkebUsername,
+    placeholder: "@username または https://skeb.jp/@username",
+    icon: SkebIcon,
+    buttonClass: "bg-teal-500 hover:bg-teal-600 active:bg-teal-700",
   },
 ];
 

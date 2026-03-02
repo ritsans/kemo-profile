@@ -21,10 +21,6 @@ import {
   GripVerticalIcon,
   MoreHorizontalIcon,
 } from "lucide-react";
-/**
- * プロフィール編集フォームのフィールド群。
- * 右ペインの入力UIとエラー表示のみを担当する。
- */
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -108,25 +104,25 @@ function SortableSnsItem({
     <li
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3"
+      className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-3"
     >
       {/* ドラッグハンドル */}
       <button
         type="button"
         {...attributes}
         {...listeners}
-        className="flex h-8 w-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-gray-300 hover:text-gray-500 active:cursor-grabbing"
+        className="flex h-8 w-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-muted-foreground/50 hover:text-muted-foreground active:cursor-grabbing"
         aria-label="ドラッグして並び替え"
       >
         <GripVerticalIcon className="h-4 w-4" aria-hidden="true" />
       </button>
 
       {/* プラットフォームアイコンボックス */}
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-gray-50">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-muted">
         {Icon ? (
-          <Icon className="h-5 w-5 text-gray-700" aria-hidden="true" />
+          <Icon className="h-5 w-5 text-foreground" aria-hidden="true" />
         ) : (
-          <span className="text-sm font-bold text-gray-700">
+          <span className="text-sm font-bold text-foreground">
             {platform?.label[0]}
           </span>
         )}
@@ -134,10 +130,10 @@ function SortableSnsItem({
 
       {/* 2行テキスト */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-900">
+        <p className="truncate text-sm font-medium text-foreground">
           {platform?.label} · @{value}
         </p>
-        <p className="truncate text-xs text-gray-400">
+        <p className="truncate text-xs text-muted-foreground">
           {value}
           {isLocked && "（OAuth連携）"}
         </p>
@@ -150,7 +146,7 @@ function SortableSnsItem({
             href={platform.profileUrl(value)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:text-gray-600"
+            className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:text-foreground"
             aria-label={`${platform.label}を開く`}
           >
             <ExternalLinkIcon className="h-4 w-4" aria-hidden="true" />
@@ -229,7 +225,7 @@ export function ProfileEditFields({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
       <form action={formAction} className="space-y-5">
         <input
           type="hidden"
@@ -240,13 +236,13 @@ export function ProfileEditFields({
 
         {/* Basic セクション */}
         <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Basic
           </p>
           <div className="space-y-4">
             <div>
               <Label htmlFor="display_name" className="mb-1">
-                Name <span className="text-red-500">*</span>
+                Name <span className="text-destructive">*</span>
               </Label>
               <Input
                 type="text"
@@ -259,7 +255,7 @@ export function ProfileEditFields({
                 disabled={isPending}
               />
               {fieldErrors.display_name && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-destructive">
                   {fieldErrors.display_name}
                 </p>
               )}
@@ -279,27 +275,36 @@ export function ProfileEditFields({
                 disabled={isPending}
                 placeholder="自己紹介を入力してください（160文字以内）"
               />
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {currentBio.length} / 160
               </p>
               {fieldErrors.bio && (
-                <p className="mt-1 text-sm text-red-600">{fieldErrors.bio}</p>
+                <p className="mt-1 text-sm text-destructive">
+                  {fieldErrors.bio}
+                </p>
               )}
             </div>
+          </div>
+
+          <div className="flex pt-4">
+            <Button type="submit" disabled={isPending} className="flex-1">
+              {isPending ? "保存中..." : "保存する"}
+            </Button>
           </div>
         </div>
 
         {/* SNS Links セクション */}
         <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             SNS Links
           </p>
           {orderedKeys.length === 0 ? (
-            <p className="mb-2 text-sm text-gray-400">
+            <p className="mb-2 text-sm text-muted-foreground">
               SNSリンクはまだ登録されていません
             </p>
           ) : (
             <DndContext
+              id="sns-links-sortable"
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={handleDragEnd}
@@ -335,25 +340,7 @@ export function ProfileEditFields({
             <span aria-hidden="true">+</span> リンクを追加
           </Button>
         </div>
-
-        <div className="flex pt-2">
-          <Button type="submit" disabled={isPending} className="flex-1">
-            {isPending ? "保存中..." : "保存する"}
-          </Button>
-        </div>
       </form>
     </div>
   );
 }
-
-/** 保存状態に応じたステータスメッセージ
-function SaveStatus({ saved, dirty }: { saved: boolean; dirty: boolean }) {
-  if (saved) {
-    return <p className="text-sm text-green-600">保存しました</p>;
-  }
-  if (dirty) {
-    return <p className="text-sm text-amber-600">未保存の変更があります</p>;
-  }
-  return <p className="text-sm text-gray-400">保存済み</p>;
-}
-*/

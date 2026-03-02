@@ -68,6 +68,7 @@ async function updateProfileAndRevalidate(
   }
 
   revalidatePath("/mypage");
+  revalidatePath("/p", "layout");
   return { success: true, data: undefined };
 }
 
@@ -258,6 +259,7 @@ export async function updateProfile(
   }
 
   revalidatePath("/mypage");
+  revalidatePath("/p", "layout");
   return { success: true };
 }
 
@@ -323,6 +325,7 @@ export async function addSocialLink(
   }
 
   revalidatePath("/mypage");
+  revalidatePath("/p", "layout");
   return { success: true, data: undefined };
 }
 
@@ -396,6 +399,7 @@ export async function updateSocialLink(
   }
 
   revalidatePath("/mypage");
+  revalidatePath("/p", "layout");
   return { success: true, data: undefined };
 }
 
@@ -419,6 +423,7 @@ export async function reorderSocialLinks(
   }
 
   revalidatePath("/mypage");
+  revalidatePath("/p", "layout");
   return { success: true, data: undefined };
 }
 
@@ -481,5 +486,6 @@ export async function removeSocialLink(
   }
 
   revalidatePath("/mypage");
+  revalidatePath("/p", "layout");
   return { success: true, data: undefined };
 }

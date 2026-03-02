@@ -32,7 +32,7 @@ export function ProfilePreviewCard({
         showBioPlaceholder={true}
         showSocialEmptyState={true}
         compact={true}
-        className="!rounded-none !bg-transparent !p-0 !shadow-none"
+        className="rounded-none! bg-transparent! p-0! shadow-none!"
       />
     </div>
   );

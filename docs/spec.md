@@ -179,6 +179,8 @@ SNSリンクは `profiles.social_links` JSONB カラムに格納する。プラ�
 | キー | 表示名 | プロフィールURL | 入力の正規化 |
 |---|---|---|---|
 | `pixiv` | Pixiv | `https://pixiv.me/{value}` | URL→ID抽出 |
+| `youtube` | YouTubeチャンネル | `https://www.youtube.com/@{value}` または `https://www.youtube.com/channel/{value}` | `@`除去、URL→ハンドル/チャンネルID抽出 |
+| `skeb` | Skeb | `https://skeb.jp/@{value}` | `@`除去、URL→ユーザー名抽出 |
 | `bluesky` | Bluesky | `https://bsky.app/profile/{value}` | `@`除去 |
 | `discord` | Discord | なし（ユーザー名のみ表示） | そのまま |
 | `misskey` | Misskey | `https://{instance}/@{value}` | 要検討 |
