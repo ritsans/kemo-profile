@@ -125,7 +125,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-[17px] leading-7 text-foreground antialiased;
+    @apply bg-background text-[17px] leading-7 text-foreground antialiased overflow-x-hidden;
   }
   h1 {
     @apply text-3xl leading-tight font-semibold tracking-[-0.02em];

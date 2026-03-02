@@ -118,13 +118,13 @@ function SortableSnsItem({
       </button>
 
       {/* プラットフォームアイコンボックス */}
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-muted">
+      <div
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${platform?.iconBoxClass ?? "border border-border bg-muted text-foreground"}`}
+      >
         {Icon ? (
-          <Icon className="h-5 w-5 text-foreground" aria-hidden="true" />
+          <Icon className="h-5 w-5" aria-hidden="true" />
         ) : (
-          <span className="text-sm font-bold text-foreground">
-            {platform?.label[0]}
-          </span>
+          <span className="text-sm font-bold">{platform?.label[0]}</span>
         )}
       </div>
 
@@ -225,7 +225,7 @@ export function ProfileEditFields({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6">
       <form action={formAction} className="space-y-5">
         <input
           type="hidden"

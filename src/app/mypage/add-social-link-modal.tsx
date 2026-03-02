@@ -133,8 +133,19 @@ export function AddSocialLinkModal({
                       type="button"
                       variant="outline"
                       onClick={() => handleSelectPlatform(p.key)}
-                      className="w-full justify-start"
+                      className="w-full justify-start gap-3"
                     >
+                      <span
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded ${p.iconBoxClass ?? "bg-muted text-foreground"}`}
+                      >
+                        {p.icon ? (
+                          <p.icon className="h-4 w-4" aria-hidden="true" />
+                        ) : (
+                          <span className="text-xs font-bold">
+                            {p.label[0]}
+                          </span>
+                        )}
+                      </span>
                       {p.label}
                     </Button>
                   </li>

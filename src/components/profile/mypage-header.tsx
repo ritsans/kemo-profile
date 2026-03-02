@@ -17,10 +17,12 @@ interface MypageHeaderProps {
 export function MypageHeader({ publicPath }: MypageHeaderProps) {
   return (
     <header className="sticky top-0 z-30 border-b bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <span className="text-lg font-bold text-gray-900">マイページ</span>
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3">
+        <span className="min-w-0 truncate text-lg font-bold text-gray-900">
+          マイページ
+        </span>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {/* モバイル: ハンバーガーメニュー */}
           <div className="sm:hidden">
             <DropdownMenu>
@@ -62,7 +64,7 @@ export function MypageHeader({ publicPath }: MypageHeaderProps) {
             href={publicPath}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
           >
             <ExternalLink className="h-4 w-4" aria-hidden="true" />
             公開

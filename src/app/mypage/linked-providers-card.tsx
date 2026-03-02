@@ -108,7 +108,7 @@ export function LinkedProvidersCard({ identities }: LinkedProvidersCardProps) {
   }
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow">
+    <div className="rounded-lg bg-white p-4 shadow sm:p-6">
       <h2 className="mb-4 text-lg font-semibold text-gray-900">
         外部ログイン連携
       </h2>
@@ -125,15 +125,15 @@ export function LinkedProvidersCard({ identities }: LinkedProvidersCardProps) {
             key={provider.id}
             className="flex items-center justify-between rounded-lg border border-gray-200 p-3"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <ProviderIcon provider={provider.id} />
-              <span className="font-medium text-gray-700">
+              <span className="truncate font-medium text-gray-700">
                 {provider.label}
               </span>
             </div>
 
             {isLinked(provider.id) ? (
-              <span className="flex items-center gap-1 text-sm text-green-600">
+              <span className="flex shrink-0 items-center gap-1 text-sm text-green-600">
                 <CheckIcon />
                 連携済み
               </span>
@@ -143,6 +143,7 @@ export function LinkedProvidersCard({ identities }: LinkedProvidersCardProps) {
                 size="sm"
                 onClick={() => handleLink(provider.id)}
                 disabled={isLoading[provider.id]}
+                className="shrink-0"
               >
                 {isLoading[provider.id] ? "連携中..." : "連携する"}
               </Button>

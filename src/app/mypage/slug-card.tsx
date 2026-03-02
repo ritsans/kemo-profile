@@ -38,10 +38,16 @@ export function SlugCard({ slug }: SlugCardProps) {
   const errorMessage = state && !state.success ? state.error : null;
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-gray-900">カスタムURL</h2>
-        {savedMessage && <p className="text-sm text-green-600">保存しました</p>}
+    <div className="rounded-lg bg-white p-4 shadow sm:p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="min-w-0 truncate text-lg font-semibold text-gray-900">
+          カスタムURL
+        </h2>
+        {savedMessage && (
+          <p className="shrink-0 whitespace-nowrap text-sm text-green-600">
+            保存しました
+          </p>
+        )}
       </div>
 
       <form action={formAction} className="space-y-3">

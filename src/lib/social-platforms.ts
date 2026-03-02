@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 
+import { BlueskyIcon } from "@/components/icons/bluesky-icon";
 import { PixivIcon } from "@/components/icons/pixiv-icon";
 import { SkebIcon } from "@/components/icons/skeb-icon";
 import { XIcon } from "@/components/icons/x-icon";
@@ -24,23 +25,26 @@ export interface SocialPlatform {
   icon?: ComponentType<{ className?: string }>;
   /** 公開プロフィールでのボタン背景色（Tailwind クラス） */
   buttonClass?: string;
+  /** 編集フォームのアイコンバッジ背景色（Tailwind クラス） */
+  iconBoxClass?: string;
 }
 
 export const SOCIAL_PLATFORMS: SocialPlatform[] = [
-  // example:
-  // {
-  //   key: "bluesky",                              // DBのJSONBキー名（英数字・アンダースコア）
-  //   label: "Bluesky",                            // 表示名
-  //   profileUrl: (v) => `https://bsky.app/profile/${v}`,  // プロフィールURLの生成。null にするとリンクなしのテキスト表示
-  //   normalize: (input) => {                      // 任意: 入力値の正規化。省略時は trim のみ
-  //     const trimmed = input.trim();
-  //     if (!trimmed) return { ok: false, error: "入力してください" };
-  //     return { ok: true, value: trimmed };
-  //   },
-  //   placeholder: "handle.bsky.social",           // input の placeholder テキスト
-  //   icon: BlueskyIcon,                           // 任意: src/components/icons/ に配置したコンポーネント
-  //   buttonClass: "bg-blue-500 hover:bg-blue-600 active:bg-blue-700", // 任意: 公開プロフィールのボタン色（Tailwind）
-  // },
+  {
+    key: "bluesky", // DBのJSONBキー名（英数字・アンダースコア）
+    label: "Bluesky", // 表示名
+    profileUrl: (v) => `https://bsky.app/profile/${v}`, // プロフィールURLの生成。null にするとリンクなしのテキスト表示
+    normalize: (input) => {
+      // 任意: 入力値の正規化。省略時は trim のみ
+      const trimmed = input.trim();
+      if (!trimmed) return { ok: false, error: "入力してください" };
+      return { ok: true, value: trimmed };
+    },
+    placeholder: "handle.bsky.social", // input の placeholder テキスト
+    icon: BlueskyIcon,
+    buttonClass: "bg-sky-500 hover:bg-sky-600 active:bg-sky-700",
+    iconBoxClass: "bg-sky-500 text-white",
+  },
   {
     key: "x",
     label: "X (Twitter)",
@@ -49,6 +53,7 @@ export const SOCIAL_PLATFORMS: SocialPlatform[] = [
     placeholder: "username または https://x.com/username",
     icon: XIcon,
     buttonClass: "bg-black hover:bg-gray-800 active:bg-gray-900",
+    iconBoxClass: "bg-black text-white",
   },
   {
     key: "instagram",
@@ -58,6 +63,8 @@ export const SOCIAL_PLATFORMS: SocialPlatform[] = [
     placeholder: "@username または https://instagram.com/username",
     buttonClass:
       "bg-gradient-to-r from-pink-500 via-red-500 to-yellow-400 hover:from-pink-600 hover:via-red-600 hover:to-yellow-500 active:from-pink-700 active:via-red-700 active:to-yellow-600",
+    iconBoxClass:
+      "bg-gradient-to-br from-pink-500 via-red-500 to-yellow-400 text-white",
   },
   {
     key: "pixiv",
@@ -67,6 +74,7 @@ export const SOCIAL_PLATFORMS: SocialPlatform[] = [
     placeholder: "12345678 または https://www.pixiv.net/users/12345678",
     icon: PixivIcon,
     buttonClass: "bg-blue-500 hover:bg-blue-600 active:bg-blue-700",
+    iconBoxClass: "bg-blue-500 text-white",
   },
   {
     key: "youtube",
@@ -79,6 +87,7 @@ export const SOCIAL_PLATFORMS: SocialPlatform[] = [
     placeholder: "@channelname または https://www.youtube.com/@channelname",
     icon: YoutubeIcon,
     buttonClass: "bg-red-600 hover:bg-red-700 active:bg-red-800",
+    iconBoxClass: "bg-red-600 text-white",
   },
   {
     key: "skeb",
@@ -88,6 +97,7 @@ export const SOCIAL_PLATFORMS: SocialPlatform[] = [
     placeholder: "@username または https://skeb.jp/@username",
     icon: SkebIcon,
     buttonClass: "bg-teal-500 hover:bg-teal-600 active:bg-teal-700",
+    iconBoxClass: "bg-teal-500 text-white",
   },
 ];
 

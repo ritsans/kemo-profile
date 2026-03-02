@@ -161,9 +161,9 @@ export function ProfileEditForm({
   const previewBio = currentBio.trim();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* モバイル用ペイン切り替えタブ */}
-      <div className="mb-4 rounded-xl bg-gray-100 p-1 lg:hidden">
+      <div className="rounded-xl bg-gray-100 p-1 lg:hidden">
         <div className="grid grid-cols-2 gap-1 text-sm font-medium">
           <button
             type="button"
@@ -183,7 +183,9 @@ export function ProfileEditForm({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
-        <section className={paneSectionClass(mobilePane === "edit")}>
+        <section
+          className={`${paneSectionClass(mobilePane === "edit")} min-w-0`}
+        >
           <ProfileEditFields
             isPending={isPending}
             formAction={formAction}
@@ -207,7 +209,9 @@ export function ProfileEditForm({
           />
         </section>
 
-        <section className={paneSectionClass(mobilePane === "preview")}>
+        <section
+          className={`${paneSectionClass(mobilePane === "preview")} min-w-0`}
+        >
           <ProfilePreviewCard
             avatarUrl={avatarUrl}
             previewDisplayName={previewDisplayName}

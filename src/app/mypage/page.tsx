@@ -76,7 +76,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       <MypageHeader publicPath={profilePath} />
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+      <div className="mx-auto max-w-6xl px-4 py-4 sm:py-8">
         {errorMessage && (
           <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">
             {errorMessage}
@@ -84,7 +84,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
         )}
 
         {/* プレビュー + 編集（PC 2ペイン / mobile 1画面切り替え） */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <ProfileEditForm
             displayName={profile.display_name}
             bio={profile.bio}
@@ -95,14 +95,14 @@ export default async function MyPage({ searchParams }: MyPageProps) {
           />
         </div>
 
-        <div className="mb-6 grid gap-6 lg:grid-cols-2">
-          <div className="rounded-lg bg-white p-6 shadow">
+        <div className="mb-4 grid gap-4 sm:mb-6 sm:gap-6 lg:grid-cols-2">
+          <div className="rounded-lg bg-white p-4 shadow sm:p-6">
             <ShareSection profileUrl={profileUrl} />
           </div>
           <LinkedProvidersCard identities={user.identities} />
         </div>
 
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <SlugCard slug={suggestedSlug} />
         </div>
       </div>
