@@ -264,8 +264,21 @@ export async function updateProfile(
 }
 
 /**
+ * SNSリンク操作ルール（運用ルール）
+ *
+ * - プロフィール文章（display_name, bio）: 「保存」ボタン押下時にまとめてDB反映
+ * - SNSリンク（追加/編集/削除）: 操作ごとに即時DBへ反映し、公開ページに即時反映される
+ *
+ * social_links_order の整合ルール:
+ * - 追加時: 新規キーを social_links_order の末尾へ追加
+ * - 削除時: 削除キーを social_links_order から除去
+ * - 更新時: 既存キーの順序はそのまま維持（変更なし）
+ */
+
+/**
  * SNSリンク追加 Server Action
  * 同一キーが既に存在する場合はエラー（1SNS=1リンク）
+ * 追加成功時は social_links_order の末尾に新キーを追加する
  */
 export async function addSocialLink(
   platformKey: string,
@@ -291,10 +304,10 @@ export async function addSocialLink(
   const auth = await requireUser();
   if (!auth.ok) return auth.result;
 
-  // 現在の social_links を取得
+  // 現在の social_links と social_links_order を取得
   const { data: profile, error: fetchError } = await auth.supabase
     .from("profiles")
-    .select("social_links")
+    .select("social_links, social_links_order")
     .eq("owner_user_id", auth.userId)
     .single();
 
@@ -313,10 +326,13 @@ export async function addSocialLink(
   }
 
   const updated = { ...current, [platformKey]: normalized.value };
+  // 追加時: 新規キーを social_links_order の末尾へ追加
+  const currentOrder = (profile.social_links_order as string[]) ?? [];
+  const updatedOrder = [...currentOrder, platformKey];
 
   const { error } = await auth.supabase
     .from("profiles")
-    .update({ social_links: updated })
+    .update({ social_links: updated, social_links_order: updatedOrder })
     .eq("owner_user_id", auth.userId);
 
   if (error) {
@@ -332,6 +348,7 @@ export async function addSocialLink(
 /**
  * SNSリンク更新 Server Action
  * X OAuth自動設定値（`x`）は更新不可
+ * 更新時は値のみ変更し、social_links_order の順序は維持する
  */
 export async function updateSocialLink(
   platformKey: string,
@@ -430,6 +447,7 @@ export async function reorderSocialLinks(
 /**
  * SNSリンク削除 Server Action
  * X OAuth自動設定値（`x`）は削除不可
+ * 削除時は social_links_order からも該当キーを除去する
  */
 export async function removeSocialLink(
   platformKey: string,
@@ -451,10 +469,10 @@ export async function removeSocialLink(
   const auth = await requireUser();
   if (!auth.ok) return auth.result;
 
-  // 現在の social_links を取得
+  // 現在の social_links と social_links_order を取得
   const { data: profile, error: fetchError } = await auth.supabase
     .from("profiles")
-    .select("social_links")
+    .select("social_links, social_links_order")
     .eq("owner_user_id", auth.userId)
     .single();
 
@@ -474,10 +492,13 @@ export async function removeSocialLink(
 
   const updated = { ...current };
   delete updated[platformKey];
+  // 削除時: social_links_order から該当キーを除去
+  const currentOrder = (profile.social_links_order as string[]) ?? [];
+  const updatedOrder = currentOrder.filter((k) => k !== platformKey);
 
   const { error } = await auth.supabase
     .from("profiles")
-    .update({ social_links: updated })
+    .update({ social_links: updated, social_links_order: updatedOrder })
     .eq("owner_user_id", auth.userId);
 
   if (error) {

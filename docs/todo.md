@@ -6,56 +6,6 @@ Implementation tasks for authentication and My Page access based on `docs/spec.m
 
 ## Now（今すぐ）
 
-### 9. Profile Share — 動作確認
-- [x] Verify behavior (QR display, URL copy, Web Share)
-
-### 10.6 My Page Edit — 動作確認
-- [x] Verify behavior
-  - Display mode: same visual as public profile with correct data
-  - Edit mode: all fields editable and bulk-saveable
-  - x_username: flexible input formats normalized correctly
-  - Unsaved changes protection: confirmation dialog on cancel / browser back
-  - No-change save: DB update and revalidate are skipped
-
-### 12.6 SNSリンク追加フロー — 動作確認
-- [x] 動作確認
-  - `+ リンクを追加` ボタンでモーダルが開く
-  - 未追加SNSのみ選択肢に表示される
-  - 同一SNSを2回追加できない
-  - URL入力でも保存値が正規化される
-  - 追加成功後にモーダルが閉じ、編集画面に反映される
-  - 削除ボタンでSNSが削除される
-
-### 12.8 SNS即時保存と公開反映の整合
-- [ ] `addSocialLink` / `updateSocialLink` / `removeSocialLink` で `social_links_order` の整合を維持する
-  - 追加時: 新規キーを `social_links_order` 末尾へ追加
-  - 削除時: 削除キーを `social_links_order` から除去
-  - 更新時: 既存順序は維持する
-- [ ] `/p/{profile_id}` と `/p/@{slug}` の両方で、SNS追加/削除直後に公開ページへ反映されることを確認する
-- [ ] 「プロフィール文書は保存ボタンで確定」「SNSリンクは追加/編集/削除で即時DB反映」の運用ルールを仕様/実装コメントに明記する
-
----
-
-## Must（MVP必須）
-
-### 7. My Page Access
-- [ ] Add My Page link to header/navigation (toggle based on auth state)
-
-### Completion Criteria
-- [ ] Users can log in via Google/X OAuth
-- [ ] Profile is auto-created on first login
-- [ ] Logged-in users can access their profile from My Page (`/my`)
-- [ ] Unauthenticated users accessing My Page are redirected to `/login`
-
----
-
-## Should（次スプリント）
-
-### 13.1 公開プロフィールのQR導線をヘッダーへ移動
-- [ ] 公開プロフィールのヘッダーに「QRコード表示」ボタンを追加
-- [ ] プロフィールカード内のQRコード表示ボタンを削除
-- [ ] モバイル/PCでヘッダー導線の表示・操作性を確認
-
 ### 13.3 プロフィールページのBASIC表示と編集状態切替
 - [ ] プロフィールページの BASIC 状態を閲覧モードとして実装
   - 現在のアバター・表示名・プロフィール文章を平文でそのまま表示
@@ -93,6 +43,21 @@ Implementation tasks for authentication and My Page access based on `docs/spec.m
 
 ---
 
+## Must（MVP必須）— 完了
+
+### 7. My Page Access
+- [x] Add My Page link to header/navigation (toggle based on auth state)
+  - 公開プロフィールページはヘッダーなし（シンプルさ優先）
+  - マイページには既存の MypageHeader が存在する
+
+### Completion Criteria
+- [x] Users can log in via Google/X OAuth
+- [x] Profile is auto-created on first login
+- [x] Logged-in users can access their profile from My Page (`/my`)
+- [x] Unauthenticated users accessing My Page are redirected to `/login`
+
+---
+
 ## Could（余裕があれば）
 
 ### 13.0 SNSリンク編集UIをLinktree風に改善
@@ -121,6 +86,26 @@ Implementation tasks for authentication and My Page access based on `docs/spec.m
 ---
 
 ## 完了済み（参考）
+
+### 13.1 公開プロフィールにハンバーガーメニュー追加
+- [x] 公開プロフィール右上に固定配置のハンバーガーメニューを追加（`public-menu.tsx`）
+- [x] DropdownMenu: QRコード表示・URLコピー・Web Share メニュー項目
+- [x] QRコードを Dialog で表示（`qrcode.react`）
+- [x] モバイル/PC共通で動作確認
+
+### 9. Profile Share — 動作確認
+- [x] Verify behavior (QR display, URL copy, Web Share)
+
+### 10.6 My Page Edit — 動作確認
+- [x] Display mode / Edit mode / x_username正規化 / 未保存変更保護 / 変更なし保存スキップ
+
+### 12.6 SNSリンク追加フロー — 動作確認
+- [x] 追加モーダル・未追加SNSフィルタ・重複防止・URL正規化・削除 の全動作確認
+
+### 12.8 SNS即時保存と公開反映の整合
+- [x] `social_links_order` の整合維持（追加/削除/更新）
+- [x] 公開ページ (`/p/{id}`, `/p/@{slug}`) への即時反映確認
+- [x] 運用ルールを仕様/実装コメントに明記
 
 ### 7. My Page Access
 - [x] Create My Page route (`/my`)

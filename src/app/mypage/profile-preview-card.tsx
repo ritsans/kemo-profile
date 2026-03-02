@@ -22,7 +22,7 @@ export function ProfilePreviewCard({
   previewSocialLinksOrder,
 }: ProfilePreviewCardProps) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm lg:sticky lg:top-8">
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm lg:sticky lg:top-20">
       <ProfileCardView
         displayName={previewDisplayName}
         bio={previewBio || null}

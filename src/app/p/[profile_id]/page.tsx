@@ -1,5 +1,7 @@
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ProfileCardView } from "@/components/profile/profile-card-view";
+import { PublicMenu } from "@/components/profile/public-menu";
 import { createClient } from "@/lib/supabase/server";
 
 interface ProfileData {
@@ -64,8 +66,20 @@ export default async function ProfilePage({ params }: PageProps) {
     notFound();
   }
 
+  // origin を構築してプロフィールの絶対URLを生成
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "localhost:3000";
+  const protocol = host.includes("localhost") ? "http" : "https";
+  const origin = `${protocol}://${host}`;
+  const profileUrl = profile.slug
+    ? `${origin}/p/@${profile.slug}`
+    : `${origin}/p/${profile.profile_id}`;
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
+      {/* ハンバーガーメニュー（QR/コピー/共有） */}
+      <PublicMenu profileUrl={profileUrl} />
+
       <div className="w-full max-w-md space-y-6">
         {/* プロフィールカード */}
         <ProfileCardView
