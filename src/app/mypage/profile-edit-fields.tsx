@@ -16,11 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  ExternalLinkIcon,
-  GripVerticalIcon,
-  MoreHorizontalIcon,
-} from "lucide-react";
+import { GripVerticalIcon, MoreHorizontalIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -130,28 +126,17 @@ function SortableSnsItem({
 
       {/* 2行テキスト */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">
-          {platform?.label} · @{value}
+        <p className="truncate text-sm font-semibold text-foreground">
+          {platform?.label}
         </p>
-        <p className="truncate text-xs text-muted-foreground">
-          {value}
+        <p className="truncate text-xs leading-tight text-muted-foreground">
+          {platform?.profileUrl?.(value) ?? value}
           {isLocked && "（OAuth連携）"}
         </p>
       </div>
 
-      {/* 外部リンク + メニュー */}
+      {/* メニュー */}
       <div className="flex shrink-0 items-center gap-1">
-        {platform?.profileUrl && (
-          <a
-            href={platform.profileUrl(value)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:text-foreground"
-            aria-label={`${platform.label}を開く`}
-          >
-            <ExternalLinkIcon className="h-4 w-4" aria-hidden="true" />
-          </a>
-        )}
         {!isLocked && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

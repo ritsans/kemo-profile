@@ -8,7 +8,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 kemono-profile is a digital business card exchange web app for doujin events and meetups. Users can create public profiles (digital business cards) and share them via URL/QR code. The MVP focuses on quick SNS (primarily X/Twitter) navigation from mobile devices.
 
-See `docs/spec.md` for complete MVP specification. for the TODOs to be addressed, refer to `docs/todo.md`.
+## Documentation References
+- **MVP Specs**: Refer to `docs/spec.md` for requirements and scope.
+- **Task Management**: See `docs/todo.md` for remaining tasks and priorities.
+- **Architecture**: Consult `docs/rolemap.md` for file structures under `src/app/` and their respective roles.
 
 ## Technology Stack
 
@@ -22,19 +25,7 @@ See `docs/spec.md` for complete MVP specification. for the TODOs to be addressed
 
 ## Development Commands
 
-```bash
-# Development server
-pnpm dev
-
-# Production build
-pnpm build
-
-# Start production server
-pnpm start
-
-# Lint and check code
-pnpm lint
-```
+- Use standard Next.js commands via `pnpm` (`dev`, `build`, `start`, `lint`).
 
 ## Rules for Implementation and Revision Proposals
 
