@@ -8,6 +8,7 @@ import {
   useActionState,
   useCallback,
   useEffect,
+  useRef,
   useState,
   useTransition,
 } from "react";
@@ -66,10 +67,13 @@ export function ProfileEditForm({
   avatarUrl,
   lockedSocialKeys,
 }: ProfileEditFormProps) {
-  const [mobilePane, setMobilePane] = useState<"preview" | "edit">("preview");
+  const [basicMode, setBasicMode] = useState<"viewing" | "editing">("viewing");
+  const [mobilePane, setMobilePane] = useState<"preview" | "edit">("edit");
   // フォーム内の現在値
   const [currentDisplayName, setCurrentDisplayName] = useState(displayName);
   const [currentBio, setCurrentBio] = useState(bio ?? "");
+  const currentDisplayNameRef = useRef(currentDisplayName);
+  const currentBioRef = useRef(currentBio);
   const [currentSocialLinks, setCurrentSocialLinks] =
     useState<Record<string, string>>(socialLinks);
 
@@ -95,18 +99,27 @@ export function ProfileEditForm({
     FormData
   >(updateProfile, null);
 
+  useEffect(() => {
+    currentDisplayNameRef.current = currentDisplayName;
+  }, [currentDisplayName]);
+
+  useEffect(() => {
+    currentBioRef.current = currentBio;
+  }, [currentBio]);
+
   // 保存成功時: 基準値更新＆保存完了メッセージ表示
   useEffect(() => {
     if (!state?.success) return;
 
-    const trimmedName = currentDisplayName.trim();
-    const trimmedBio = currentBio.trim();
+    const trimmedName = currentDisplayNameRef.current.trim();
+    const trimmedBio = currentBioRef.current.trim();
 
     setCurrentDisplayName(trimmedName);
     setCurrentBio(trimmedBio);
     setSavedDisplayName(trimmedName);
     setSavedBio(trimmedBio);
-  }, [state, currentDisplayName, currentBio]);
+    setBasicMode("viewing");
+  }, [state]);
 
   // dirty チェック（social_links, slug は Server Action で個別保存のため除外）
   const isDirty =
@@ -119,6 +132,24 @@ export function ProfileEditForm({
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [isDirty]);
+
+  // Basic 編集モードへ切り替え
+  function handleEdit() {
+    setMobilePane("edit");
+    setBasicMode("editing");
+  }
+
+  // 編集キャンセル: 未保存変更があれば確認して閲覧モードへ戻す
+  function handleCancel() {
+    if (
+      isDirty &&
+      !window.confirm("変更内容が保存されていません。編集を破棄しますか？")
+    )
+      return;
+    setCurrentDisplayName(savedDisplayName);
+    setCurrentBio(savedBio);
+    setBasicMode("viewing");
+  }
 
   // SNSリンク追加・編集の保存後: ローカル状態を更新してモーダルを閉じる
   function handleSocialLinkSaved(key: string, value: string) {
@@ -206,6 +237,10 @@ export function ProfileEditForm({
             onReorderSocialLinks={handleReorderSocialLinks}
             fieldErrors={fieldErrors}
             removingKey={removingKey}
+            basicMode={basicMode}
+            onEdit={handleEdit}
+            onCancel={handleCancel}
+            avatarUrl={avatarUrl}
           />
         </section>
 
