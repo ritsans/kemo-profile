@@ -2,22 +2,14 @@
 
 /**
  * マイページ編集エリアの親コンテナ。
- * 状態管理（保存・差分・離脱保護）と、プレビュー/編集ペインのレイアウトを担当する。
+ * autosave（1秒debounce）・SNSリンク上下移動・プレビューペインのレイアウトを担当する。
  */
-import {
-  useActionState,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 import {
   removeSocialLink,
   reorderSocialLinks,
   updateProfile,
 } from "@/app/actions/profile";
-import type { ProfileUpdateResult } from "@/lib/types/action";
 import { AddSocialLinkModal } from "./add-social-link-modal";
 import { ProfileEditFields } from "./profile-edit-fields";
 import { ProfilePreviewCard } from "./profile-preview-card";
@@ -32,6 +24,8 @@ interface ProfileEditFormProps {
 }
 
 type ModalState = { type: "add" } | { type: "edit"; key: string } | null;
+
+export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 /** モバイル切り替えタブのスタイル */
 function paneTabClass(isActive: boolean): string {
@@ -51,7 +45,6 @@ function buildInitialOrder(
   savedOrder: string[] | null,
 ): string[] {
   if (savedOrder && savedOrder.length > 0) {
-    // 保存済み順序を優先しつつ、存在しないキーを除外し、新規キーを末尾に追加
     const existing = savedOrder.filter((k) => k in socialLinks);
     const added = Object.keys(socialLinks).filter((k) => !existing.includes(k));
     return [...existing, ...added];
@@ -67,13 +60,9 @@ export function ProfileEditForm({
   avatarUrl,
   lockedSocialKeys,
 }: ProfileEditFormProps) {
-  const [basicMode, setBasicMode] = useState<"viewing" | "editing">("viewing");
   const [mobilePane, setMobilePane] = useState<"preview" | "edit">("edit");
-  // フォーム内の現在値
   const [currentDisplayName, setCurrentDisplayName] = useState(displayName);
   const [currentBio, setCurrentBio] = useState(bio ?? "");
-  const currentDisplayNameRef = useRef(currentDisplayName);
-  const currentBioRef = useRef(currentBio);
   const [currentSocialLinks, setCurrentSocialLinks] =
     useState<Record<string, string>>(socialLinks);
 
@@ -82,9 +71,14 @@ export function ProfileEditForm({
     buildInitialOrder(socialLinks, socialLinksOrder),
   );
 
-  // 差分検知用の基準値（最後に保存された値）
-  const [savedDisplayName, setSavedDisplayName] = useState(displayName);
-  const [savedBio, setSavedBio] = useState(bio ?? "");
+  // autosave 用
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const savedDisplayNameRef = useRef(displayName);
+  const savedBioRef = useRef(bio ?? "");
+  const currentDisplayNameRef = useRef(displayName);
+  const currentBioRef = useRef(bio ?? "");
+  const [, startAutosaveTransition] = useTransition();
 
   // モーダル状態
   const [modalState, setModalState] = useState<ModalState>(null);
@@ -94,67 +88,78 @@ export function ProfileEditForm({
   const [, startRemoveTransition] = useTransition();
   const [, startReorderTransition] = useTransition();
 
-  const [state, formAction, isPending] = useActionState<
-    ProfileUpdateResult | null,
-    FormData
-  >(updateProfile, null);
-
-  useEffect(() => {
-    currentDisplayNameRef.current = currentDisplayName;
-  }, [currentDisplayName]);
-
-  useEffect(() => {
-    currentBioRef.current = currentBio;
-  }, [currentBio]);
-
-  // 保存成功時: 基準値更新＆保存完了メッセージ表示
-  useEffect(() => {
-    if (!state?.success) return;
-
-    const trimmedName = currentDisplayNameRef.current.trim();
-    const trimmedBio = currentBioRef.current.trim();
-
-    setCurrentDisplayName(trimmedName);
-    setCurrentBio(trimmedBio);
-    setSavedDisplayName(trimmedName);
-    setSavedBio(trimmedBio);
-    setBasicMode("viewing");
-  }, [state]);
-
-  // dirty チェック（social_links, slug は Server Action で個別保存のため除外）
-  const isDirty =
-    currentDisplayName !== savedDisplayName || currentBio !== savedBio;
-
-  // ブラウザ離脱保護（未保存の場合）
-  useEffect(() => {
-    if (!isDirty) return;
-    const handler = (e: BeforeUnloadEvent) => e.preventDefault();
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [isDirty]);
-
-  // Basic 編集モードへ切り替え
-  function handleEdit() {
-    setMobilePane("edit");
-    setBasicMode("editing");
+  function scheduleAutosave(name: string, bio: string) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      startAutosaveTransition(async () => {
+        setSaveStatus("saving");
+        const fd = new FormData();
+        fd.set("display_name", name);
+        fd.set("bio", bio);
+        fd.set("original_display_name", savedDisplayNameRef.current);
+        fd.set("original_bio", savedBioRef.current);
+        const result = await updateProfile(null, fd);
+        if (result?.success) {
+          savedDisplayNameRef.current = name.trim();
+          savedBioRef.current = bio.trim();
+          setSaveStatus("saved");
+          setTimeout(() => setSaveStatus("idle"), 2000);
+        } else {
+          setSaveStatus("error");
+        }
+      });
+    }, 1000);
   }
 
-  // 編集キャンセル: 未保存変更があれば確認して閲覧モードへ戻す
-  function handleCancel() {
-    if (
-      isDirty &&
-      !window.confirm("変更内容が保存されていません。編集を破棄しますか？")
-    )
-      return;
-    setCurrentDisplayName(savedDisplayName);
-    setCurrentBio(savedBio);
-    setBasicMode("viewing");
+  function handleDisplayNameChange(value: string) {
+    setCurrentDisplayName(value);
+    currentDisplayNameRef.current = value;
+    scheduleAutosave(value, currentBioRef.current);
   }
+
+  function handleBioChange(value: string) {
+    setCurrentBio(value);
+    currentBioRef.current = value;
+    scheduleAutosave(currentDisplayNameRef.current, value);
+  }
+
+  // SNSリンク上移動
+  const handleMoveUp = useCallback(
+    (key: string) => {
+      const idx = currentOrder.indexOf(key);
+      if (idx <= 0) return;
+
+      const next = [...currentOrder];
+      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+      setCurrentOrder(next);
+
+      startReorderTransition(async () => {
+        await reorderSocialLinks(next);
+      });
+    },
+    [currentOrder],
+  );
+
+  // SNSリンク下移動
+  const handleMoveDown = useCallback(
+    (key: string) => {
+      const idx = currentOrder.indexOf(key);
+      if (idx < 0 || idx >= currentOrder.length - 1) return;
+
+      const next = [...currentOrder];
+      [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+      setCurrentOrder(next);
+
+      startReorderTransition(async () => {
+        await reorderSocialLinks(next);
+      });
+    },
+    [currentOrder],
+  );
 
   // SNSリンク追加・編集の保存後: ローカル状態を更新してモーダルを閉じる
   function handleSocialLinkSaved(key: string, value: string) {
     setCurrentSocialLinks((prev) => ({ ...prev, [key]: value }));
-    // 新規キーはorderの末尾に追加
     setCurrentOrder((prev) => (prev.includes(key) ? prev : [...prev, key]));
     setModalState(null);
   }
@@ -178,15 +183,6 @@ export function ProfileEditForm({
     });
   }
 
-  // SNSリンク並び替え
-  const handleReorderSocialLinks = useCallback((newOrder: string[]) => {
-    setCurrentOrder(newOrder);
-    startReorderTransition(async () => {
-      await reorderSocialLinks(newOrder);
-    });
-  }, []);
-
-  const fieldErrors = state && !state.success ? state.fieldErrors : {};
   const previewDisplayName =
     currentDisplayName.trim() || "表示名を入力してください";
   const previewBio = currentBio.trim();
@@ -218,14 +214,11 @@ export function ProfileEditForm({
           className={`${paneSectionClass(mobilePane === "edit")} min-w-0`}
         >
           <ProfileEditFields
-            isPending={isPending}
-            formAction={formAction}
-            originalDisplayName={savedDisplayName}
-            originalBio={savedBio}
+            saveStatus={saveStatus}
             currentDisplayName={currentDisplayName}
-            setCurrentDisplayName={setCurrentDisplayName}
+            onDisplayNameChange={handleDisplayNameChange}
             currentBio={currentBio}
-            setCurrentBio={setCurrentBio}
+            onBioChange={handleBioChange}
             currentSocialLinks={currentSocialLinks}
             socialLinksOrder={currentOrder}
             lockedSocialKeys={lockedSocialKeys}
@@ -234,13 +227,9 @@ export function ProfileEditForm({
             onEditSocialLinkClick={(key) =>
               setModalState({ type: "edit", key })
             }
-            onReorderSocialLinks={handleReorderSocialLinks}
-            fieldErrors={fieldErrors}
+            onMoveUp={handleMoveUp}
+            onMoveDown={handleMoveDown}
             removingKey={removingKey}
-            basicMode={basicMode}
-            onEdit={handleEdit}
-            onCancel={handleCancel}
-            avatarUrl={avatarUrl}
           />
         </section>
 

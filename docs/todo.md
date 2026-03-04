@@ -16,6 +16,11 @@ Implementation tasks for authentication and My Page access based on `docs/spec.m
   - キャンセルで閲覧モードに戻る（未保存変更時は確認導線を検討）
   - 保存で更新処理を実行し、成功後は閲覧モードへ戻す
 
+### 13.5 マイページUI簡略化（autosave・↑↓並び替え）
+- [x] name / bio を autosave（1秒debounce）に変更し、閲覧モード・保存ボタンを廃止
+- [x] SNSリンク並び替えをdrag&drop（dnd-kit）から ↑↓ ボタンに変更
+- [x] @dnd-kit/* パッケージを依存関係から削除
+
 ### 13.4 バッジリボン機能（最大3つ選択）
 - [ ] 仕様追加: バッジリボン機能を `docs/spec.md` に反映
   - 用途: 自己属性タグ（例: `ARTIST`, `VTUBER`, `STREAMER`）
