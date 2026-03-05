@@ -4,13 +4,13 @@
  * マイページ編集エリアの親コンテナ。
  * autosave（1秒debounce）・SNSリンク上下移動・プレビューペインのレイアウトを担当する。
  */
-import { useCallback, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
   removeSocialLink,
   reorderSocialLinks,
   updateProfile,
 } from "@/app/actions/profile";
-import { AddSocialLinkModal } from "./add-social-link-modal";
+import { SocialLinkDrawer } from "./social-link-drawer";
 import { ProfileEditFields } from "./profile-edit-fields";
 import { ProfilePreviewCard } from "./profile-preview-card";
 
@@ -74,11 +74,19 @@ export function ProfileEditForm({
   // autosave 用
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
   const savedDisplayNameRef = useRef(displayName);
   const savedBioRef = useRef(bio ?? "");
   const currentDisplayNameRef = useRef(displayName);
   const currentBioRef = useRef(bio ?? "");
   const [, startAutosaveTransition] = useTransition();
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, []);
 
   // モーダル状態
   const [modalState, setModalState] = useState<ModalState>(null);
@@ -103,7 +111,8 @@ export function ProfileEditForm({
           savedDisplayNameRef.current = name.trim();
           savedBioRef.current = bio.trim();
           setSaveStatus("saved");
-          setTimeout(() => setSaveStatus("idle"), 2000);
+          if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+          idleTimerRef.current = setTimeout(() => setSaveStatus("idle"), 2000);
         } else {
           setSaveStatus("error");
         }
@@ -222,14 +231,12 @@ export function ProfileEditForm({
             currentSocialLinks={currentSocialLinks}
             socialLinksOrder={currentOrder}
             lockedSocialKeys={lockedSocialKeys}
-            onRemoveSocialLink={handleRemoveSocialLink}
             onAddSocialLinkClick={() => setModalState({ type: "add" })}
             onEditSocialLinkClick={(key) =>
               setModalState({ type: "edit", key })
             }
             onMoveUp={handleMoveUp}
             onMoveDown={handleMoveDown}
-            removingKey={removingKey}
           />
         </section>
 
@@ -247,7 +254,7 @@ export function ProfileEditForm({
       </div>
 
       {modalState && (
-        <AddSocialLinkModal
+        <SocialLinkDrawer
           existingKeys={Object.keys(currentSocialLinks)}
           mode={modalState.type}
           initialPlatformKey={
@@ -260,6 +267,14 @@ export function ProfileEditForm({
           }
           onClose={() => setModalState(null)}
           onSaved={handleSocialLinkSaved}
+          onRemove={
+            modalState.type === "edit"
+              ? (key) => {
+                  setModalState(null);
+                  setTimeout(() => handleRemoveSocialLink(key), 200);
+                }
+              : undefined
+          }
         />
       )}
     </div>

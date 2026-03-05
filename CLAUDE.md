@@ -94,11 +94,6 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 import { env } from "@/lib/env.server";
 const url = env("NEXT_PUBLIC_SUPABASE_URL");
 
-// ✅ GOOD (Client Component)
-import { env } from "@/lib/env.client";
-const url = env("NEXT_PUBLIC_SUPABASE_URL");
-```
-
 **Exception**: Variables used only for comparison (e.g., `process.env.NODE_ENV === "value"`, `BYPASS_*`) do not need `env()`.
 
 The `env()` helper throws an error at runtime if the variable is undefined, providing better error messages than silent undefined access.
@@ -109,10 +104,6 @@ All decorative SVG icons must include `aria-hidden="true"` to satisfy Biome's `a
 
 - Decorative icons (icons with adjacent text labels): Add `aria-hidden="true"`
 - Standalone meaningful icons: Add `<title>` element inside `<svg>`
-
-#### Shared Icon Components
-
-Reusable SVG icon components are stored in `src/components/icons/`.
 
 ### UI Components (shadcn/ui)
 
@@ -175,25 +166,3 @@ To change the shared form style, edit `src/components/ui/input.tsx` — it appli
 4. **Local-first bookmarks**: Bookmarks always saved to IndexedDB, synced to cloud only when logged in
 5. **No cloud sync for view history**: History stays local only
 6. **Soft deletes**: Use `deleted_at` for bookmarks (both client and cloud)
-
-### Profile Requirements
-
-**Required fields:**
-- `display_name`: Handle name (mandatory)
-- `avatar`: Avatar image (required, placeholder allowed until complete)
-
-**Optional fields:**
-- `x_username`: X (Twitter) username (normalized from URL or @username input)
-  - Auto-populated for X OAuth users
-  - Null for Google OAuth users (can be added later via `/edit`)
-- `bio`: Self-introduction text (max 160 chars)
-- `slug`: Custom URL identifier for `/p/@{slug}` format (3-20 chars, unique)
-
-**First-view priority**: Display these three elements immediately on profile load with large, tappable X link button (X link hidden/disabled if `x_username` is null).
-
-## Out of Scope for MVP
-
-- Event mode (lightweight routing, PWA optimization)
-- Bookmark expiration/cleanup
-- Mutual exchange/approval/auto-follow features
-- Cloud sync for view history

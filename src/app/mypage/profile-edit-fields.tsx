@@ -1,17 +1,7 @@
 "use client";
 
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-  MoreHorizontalIcon,
-} from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getPlatform } from "@/lib/social-platforms";
@@ -29,18 +19,14 @@ interface ProfileEditFieldsProps {
   socialLinksOrder: string[];
   /** ロック済みキー（表示のみ・削除不可） */
   lockedSocialKeys: string[];
-  /** 削除ボタン押下 */
-  onRemoveSocialLink: (key: string) => void;
   /** + リンクを追加 ボタン押下 */
   onAddSocialLinkClick: () => void;
-  /** 編集ボタン押下 */
+  /** SNSアイテムタップ（Drawer を開く） */
   onEditSocialLinkClick: (key: string) => void;
   /** 上移動ボタン押下 */
   onMoveUp: (key: string) => void;
   /** 下移動ボタン押下 */
   onMoveDown: (key: string) => void;
-  /** 削除処理中のキー（削除ボタンを無効化） */
-  removingKey: string | null;
 }
 
 // ────────────────────────────────────────────────────────
@@ -50,11 +36,9 @@ interface SnsItemProps {
   id: string;
   value: string;
   isLocked: boolean;
-  isRemoving: boolean;
   isFirst: boolean;
   isLast: boolean;
   onEdit: () => void;
-  onRemove: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
 }
@@ -63,11 +47,9 @@ function SnsItem({
   id,
   value,
   isLocked,
-  isRemoving,
   isFirst,
   isLast,
   onEdit,
-  onRemove,
   onMoveUp,
   onMoveDown,
 }: SnsItemProps) {
@@ -100,56 +82,35 @@ function SnsItem({
         </Button>
       </div>
 
-      {/* プラットフォームアイコンボックス */}
-      <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${platform?.iconBoxClass ?? "border border-border bg-muted text-foreground"}`}
+      {/* プラットフォームアイコン + テキスト: タップで Drawer を開く */}
+      <button
+        type="button"
+        className="flex min-w-0 flex-1 items-center gap-3 disabled:opacity-50"
+        onClick={onEdit}
+        disabled={isLocked}
+        aria-label={`${platform?.label}を編集`}
       >
-        {Icon ? (
-          <Icon className="h-5 w-5" aria-hidden="true" />
-        ) : (
-          <span className="text-sm font-bold">{platform?.label[0]}</span>
-        )}
-      </div>
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${platform?.iconBoxClass ?? "border border-border bg-muted text-foreground"}`}
+        >
+          {Icon ? (
+            <Icon className="h-5 w-5" aria-hidden="true" />
+          ) : (
+            <span className="text-sm font-bold">{platform?.label[0]}</span>
+          )}
+        </div>
 
-      {/* 2行テキスト */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-foreground">
-          {platform?.label}
-        </p>
-        <p className="truncate text-xs leading-tight text-muted-foreground">
-          {platform?.profileUrl?.(value) ?? value}
-          {isLocked && "（OAuth連携）"}
-        </p>
-      </div>
-
-      {/* メニュー */}
-      <div className="flex shrink-0 items-center gap-1">
-        {!isLocked && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                disabled={isRemoving}
-                aria-label="メニューを開く"
-              >
-                <MoreHorizontalIcon aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>編集</DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={onRemove}
-                disabled={isRemoving}
-              >
-                {isRemoving ? "削除中..." : "削除"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
+        {/* 2行テキスト */}
+        <div className="min-w-0 flex-1 text-left">
+          <p className="truncate text-sm font-semibold text-foreground">
+            {platform?.label}
+          </p>
+          <p className="truncate text-xs leading-tight text-muted-foreground">
+            {platform?.profileUrl?.(value) ?? value}
+            {isLocked && "（OAuth連携）"}
+          </p>
+        </div>
+      </button>
     </li>
   );
 }
@@ -178,12 +139,10 @@ export function ProfileEditFields({
   currentSocialLinks,
   socialLinksOrder,
   lockedSocialKeys,
-  onRemoveSocialLink,
   onAddSocialLinkClick,
   onEditSocialLinkClick,
   onMoveUp,
   onMoveDown,
-  removingKey,
 }: ProfileEditFieldsProps) {
   // socialLinksOrder に含まれるキーのうち currentSocialLinks に存在するものだけ表示
   const orderedKeys = socialLinksOrder.filter((k) => k in currentSocialLinks);
@@ -254,11 +213,9 @@ export function ProfileEditFields({
                   id={key}
                   value={currentSocialLinks[key]}
                   isLocked={lockedSocialKeys.includes(key)}
-                  isRemoving={removingKey === key}
                   isFirst={idx === 0}
                   isLast={idx === orderedKeys.length - 1}
                   onEdit={() => onEditSocialLinkClick(key)}
-                  onRemove={() => onRemoveSocialLink(key)}
                   onMoveUp={() => onMoveUp(key)}
                   onMoveDown={() => onMoveDown(key)}
                 />

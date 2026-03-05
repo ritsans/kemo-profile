@@ -1,23 +1,23 @@
 "use client";
 
 /**
- * SNSリンク追加/編集モーダル。
+ * SNSリンク追加/編集ドロワー（ボトムシート）。
  * add モード: Step1（SNS選択）→ Step2（入力）の2ステップ。
- * edit モード: Step2（入力）のみ。
+ * edit モード: Step2（入力）のみ。削除ボタン付き。
  */
 import { useRef, useState, useTransition } from "react";
 import { addSocialLink, updateSocialLink } from "@/app/actions/profile";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { getPlatform, SOCIAL_PLATFORMS } from "@/lib/social-platforms";
 
-interface AddSocialLinkModalProps {
+interface SocialLinkDrawerProps {
   /** 既に登録済みのプラットフォームキー一覧 */
   existingKeys: string[];
   mode: "add" | "edit";
@@ -28,16 +28,19 @@ interface AddSocialLinkModalProps {
   onClose: () => void;
   /** 保存成功後に呼ばれる（キーと正規化済み値を渡す） */
   onSaved: (key: string, value: string) => void;
+  /** edit モード時: 削除ボタン押下で呼ばれる */
+  onRemove?: (key: string) => void;
 }
 
-export function AddSocialLinkModal({
+export function SocialLinkDrawer({
   existingKeys,
   mode,
   initialPlatformKey,
   initialValue = "",
   onClose,
   onSaved,
-}: AddSocialLinkModalProps) {
+  onRemove,
+}: SocialLinkDrawerProps) {
   // add モード: "select" | "input"、edit モード: 常に "input"
   const [step, setStep] = useState<"select" | "input">(
     mode === "edit" ? "input" : "select",
@@ -110,19 +113,19 @@ export function AddSocialLinkModal({
   }
 
   return (
-    <Dialog
+    <Drawer
       open
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
     >
-      <DialogContent className="max-w-sm" showCloseButton={false}>
+      <DrawerContent>
         {/* Step 1: SNS選択 */}
         {step === "select" && (
-          <>
-            <DialogHeader>
-              <DialogTitle>SNSを選択</DialogTitle>
-            </DialogHeader>
+          <div className="mx-auto w-full max-w-sm px-4 pb-6">
+            <DrawerHeader className="px-0">
+              <DrawerTitle>SNSを選択</DrawerTitle>
+            </DrawerHeader>
             {availablePlatforms.length === 0 ? (
               <p className="text-sm text-gray-500">追加できるSNSがありません</p>
             ) : (
@@ -152,22 +155,22 @@ export function AddSocialLinkModal({
                 ))}
               </ul>
             )}
-            <div className="flex justify-end">
+            <div className="mt-4 flex justify-end">
               <Button type="button" variant="ghost" onClick={onClose}>
                 キャンセル
               </Button>
             </div>
-          </>
+          </div>
         )}
 
         {/* Step 2: 入力 */}
         {step === "input" && platform && (
-          <>
-            <DialogHeader>
-              <DialogTitle>{platform.label}</DialogTitle>
-            </DialogHeader>
+          <div className="mx-auto w-full max-w-sm px-4 pb-6">
+            <DrawerHeader className="px-0">
+              <DrawerTitle>{platform.label}</DrawerTitle>
+            </DrawerHeader>
 
-            <div>
+            <div className="mb-4">
               <Input
                 ref={inputRef}
                 type="text"
@@ -228,9 +231,25 @@ export function AddSocialLinkModal({
                     : "保存"}
               </Button>
             </div>
-          </>
+
+            {/* 削除ボタン（edit モードのみ） */}
+            {mode === "edit" && onRemove && (
+              <div className="mt-6 border-t border-border pt-4">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  disabled={isPending}
+                  onClick={() => onRemove(selectedKey)}
+                >
+                  このリンクを削除
+                </Button>
+              </div>
+            )}
+          </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 }
