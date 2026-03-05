@@ -166,7 +166,19 @@ export function SocialLinkDrawer({
         {/* Step 2: 入力 */}
         {step === "input" && platform && (
           <div className="mx-auto w-full max-w-sm px-4 pb-6">
-            <DrawerHeader className="px-0">
+            <DrawerHeader className="items-center px-0">
+              {/* SNSアイコン */}
+              <div
+                className={`mb-2 flex h-12 w-12 items-center justify-center rounded-xl ${platform.iconBoxClass ?? "border border-border bg-muted text-foreground"}`}
+              >
+                {platform.icon ? (
+                  <platform.icon className="h-6 w-6" aria-hidden="true" />
+                ) : (
+                  <span className="text-base font-bold">
+                    {platform.label[0]}
+                  </span>
+                )}
+              </div>
               <DrawerTitle>{platform.label}</DrawerTitle>
             </DrawerHeader>
 
@@ -208,15 +220,21 @@ export function SocialLinkDrawer({
                     戻る
                   </Button>
                 )}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClose}
-                  disabled={isPending}
-                >
-                  キャンセル
-                </Button>
+                {/* 削除ボタン（edit モードのみ） */}
+                {mode === "edit" && onRemove && (
+                  <div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      disabled={isPending}
+                      onClick={() => onRemove(selectedKey)}
+                    >
+                      削除
+                    </Button>
+                  </div>
+                )}
               </div>
               <Button
                 type="button"
@@ -231,22 +249,6 @@ export function SocialLinkDrawer({
                     : "保存"}
               </Button>
             </div>
-
-            {/* 削除ボタン（edit モードのみ） */}
-            {mode === "edit" && onRemove && (
-              <div className="mt-6 border-t border-border pt-4">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  disabled={isPending}
-                  onClick={() => onRemove(selectedKey)}
-                >
-                  このリンクを削除
-                </Button>
-              </div>
-            )}
           </div>
         )}
       </DrawerContent>
