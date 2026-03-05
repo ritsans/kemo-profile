@@ -15,6 +15,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { getPlatform, SOCIAL_PLATFORMS } from "@/lib/social-platforms";
 
 interface SocialLinkDrawerProps {
@@ -194,8 +195,12 @@ export function SocialLinkDrawer({
 
             <div className="mb-4 space-y-3">
               <div>
+                <Label htmlFor="sns-input" className="mb-2">
+                  IDまたはURL
+                </Label>
                 <Input
                   ref={inputRef}
+                  id="sns-input"
                   type="text"
                   value={inputValue}
                   onChange={(e) => {
@@ -219,7 +224,14 @@ export function SocialLinkDrawer({
               </div>
               {/* コメント入力（任意） */}
               <div>
+                <Label htmlFor="sns-comment" className="mb-2">
+                  コメント{" "}
+                  <span className="text-xs text-muted-foreground">
+                    （任意）
+                  </span>
+                </Label>
                 <Input
+                  id="sns-comment"
                   type="text"
                   value={commentValue}
                   onChange={(e) => setCommentValue(e.target.value)}
