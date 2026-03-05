@@ -61,6 +61,7 @@ export type Database = {
           profile_id: string;
           slug: string | null;
           social_links: Json;
+          social_links_comments: Json;
           social_links_order: string[] | null;
           updated_at: string;
         };
@@ -75,6 +76,7 @@ export type Database = {
           profile_id: string;
           slug?: string | null;
           social_links?: Json;
+          social_links_comments?: Json;
           social_links_order?: string[] | null;
           updated_at?: string;
         };
@@ -89,6 +91,7 @@ export type Database = {
           profile_id?: string;
           slug?: string | null;
           social_links?: Json;
+          social_links_comments?: Json;
           social_links_order?: string[] | null;
           updated_at?: string;
         };

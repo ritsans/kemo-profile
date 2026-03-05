@@ -12,6 +12,7 @@ interface ProfilePreviewCardProps {
   previewBio: string;
   previewSocialLinks: Record<string, string>;
   previewSocialLinksOrder?: string[];
+  previewSocialLinksComments?: Record<string, string>;
 }
 
 export function ProfilePreviewCard({
@@ -20,6 +21,7 @@ export function ProfilePreviewCard({
   previewBio,
   previewSocialLinks,
   previewSocialLinksOrder,
+  previewSocialLinksComments,
 }: ProfilePreviewCardProps) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 lg:sticky lg:top-20">
@@ -29,6 +31,7 @@ export function ProfilePreviewCard({
         avatarUrl={avatarUrl}
         socialLinks={previewSocialLinks}
         socialLinksOrder={previewSocialLinksOrder}
+        socialLinksComments={previewSocialLinksComments}
         showBioPlaceholder={true}
         showSocialEmptyState={true}
         compact={true}

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { MoveDownIcon, MoveUpIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,7 +59,7 @@ function SnsItem({
   return (
     <li className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-3">
       {/* 上下移動ボタン */}
-      <div className="flex shrink-0 flex-col gap-0.5">
+      <div className="flex shrink-0 flex-col">
         <Button
           type="button"
           variant="ghost"
@@ -68,7 +68,7 @@ function SnsItem({
           onClick={onMoveUp}
           aria-label="上に移動"
         >
-          <ChevronUpIcon className="h-3 w-3" aria-hidden="true" />
+          <MoveUpIcon className="h-5 w-5 stroke-[2.5]" aria-hidden="true" />
         </Button>
         <Button
           type="button"
@@ -78,7 +78,7 @@ function SnsItem({
           onClick={onMoveDown}
           aria-label="下に移動"
         >
-          <ChevronDownIcon className="h-3 w-3" aria-hidden="true" />
+          <MoveDownIcon className="h-5 w-5 stroke-[2.5]" aria-hidden="true" />
         </Button>
       </div>
 

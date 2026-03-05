@@ -21,6 +21,14 @@ Implementation tasks for authentication and My Page access based on `docs/spec.m
 - [x] SNSリンク並び替えをdrag&drop（dnd-kit）から ↑↓ ボタンに変更
 - [x] @dnd-kit/* パッケージを依存関係から削除
 
+### 13.6 SNSリンクにひとことコメント機能を追加
+- [x] DBマイグレーション: `social_links_comments jsonb NOT NULL DEFAULT '{}'` カラム追加
+- [x] `database.types.ts` 更新
+- [x] Server Actions 対応（`addSocialLink` / `updateSocialLink` / `removeSocialLink`）
+- [x] 編集ドロワーにコメント入力欄を追加（任意・最大50文字）
+- [x] `ProfileCardView` でバナー下にコメントを表示
+- [x] 公開プロフィールページ・マイページプレビューに `social_links_comments` を渡す
+
 ### 13.4 バッジリボン機能（最大3つ選択）
 - [ ] 仕様追加: バッジリボン機能を `docs/spec.md` に反映
   - 用途: 自己属性タグ（例: `ARTIST`, `VTUBER`, `STREAMER`）

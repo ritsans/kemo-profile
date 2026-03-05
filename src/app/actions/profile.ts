@@ -283,6 +283,7 @@ export async function updateProfile(
 export async function addSocialLink(
   platformKey: string,
   rawValue: string,
+  comment?: string,
 ): Promise<ActionResult> {
   // プラットフォーム定義確認
   const platform = getPlatform(platformKey);
@@ -304,10 +305,10 @@ export async function addSocialLink(
   const auth = await requireUser();
   if (!auth.ok) return auth.result;
 
-  // 現在の social_links と social_links_order を取得
+  // 現在の social_links と social_links_order と social_links_comments を取得
   const { data: profile, error: fetchError } = await auth.supabase
     .from("profiles")
-    .select("social_links, social_links_order")
+    .select("social_links, social_links_order, social_links_comments")
     .eq("owner_user_id", auth.userId)
     .single();
 
@@ -330,9 +331,24 @@ export async function addSocialLink(
   const currentOrder = (profile.social_links_order as string[]) ?? [];
   const updatedOrder = [...currentOrder, platformKey];
 
+  // コメント更新
+  const currentComments =
+    (profile.social_links_comments as Record<string, string>) ?? {};
+  const trimmedComment = comment?.trim() ?? "";
+  const updatedComments = { ...currentComments };
+  if (trimmedComment) {
+    updatedComments[platformKey] = trimmedComment;
+  } else {
+    delete updatedComments[platformKey];
+  }
+
   const { error } = await auth.supabase
     .from("profiles")
-    .update({ social_links: updated, social_links_order: updatedOrder })
+    .update({
+      social_links: updated,
+      social_links_order: updatedOrder,
+      social_links_comments: updatedComments,
+    })
     .eq("owner_user_id", auth.userId);
 
   if (error) {
@@ -353,6 +369,7 @@ export async function addSocialLink(
 export async function updateSocialLink(
   platformKey: string,
   rawValue: string,
+  comment?: string,
 ): Promise<ActionResult> {
   // X OAuth保護
   if (platformKey === "x") {
@@ -382,10 +399,10 @@ export async function updateSocialLink(
   const auth = await requireUser();
   if (!auth.ok) return auth.result;
 
-  // 現在の social_links を取得
+  // 現在の social_links と social_links_comments を取得
   const { data: profile, error: fetchError } = await auth.supabase
     .from("profiles")
-    .select("social_links")
+    .select("social_links, social_links_comments")
     .eq("owner_user_id", auth.userId)
     .single();
 
@@ -405,9 +422,20 @@ export async function updateSocialLink(
 
   const updated = { ...current, [platformKey]: normalized.value };
 
+  // コメント更新
+  const currentComments =
+    (profile.social_links_comments as Record<string, string>) ?? {};
+  const trimmedComment = comment?.trim() ?? "";
+  const updatedComments = { ...currentComments };
+  if (trimmedComment) {
+    updatedComments[platformKey] = trimmedComment;
+  } else {
+    delete updatedComments[platformKey];
+  }
+
   const { error } = await auth.supabase
     .from("profiles")
-    .update({ social_links: updated })
+    .update({ social_links: updated, social_links_comments: updatedComments })
     .eq("owner_user_id", auth.userId);
 
   if (error) {
@@ -469,10 +497,10 @@ export async function removeSocialLink(
   const auth = await requireUser();
   if (!auth.ok) return auth.result;
 
-  // 現在の social_links と social_links_order を取得
+  // 現在の social_links / social_links_order / social_links_comments を取得
   const { data: profile, error: fetchError } = await auth.supabase
     .from("profiles")
-    .select("social_links, social_links_order")
+    .select("social_links, social_links_order, social_links_comments")
     .eq("owner_user_id", auth.userId)
     .single();
 
@@ -495,10 +523,19 @@ export async function removeSocialLink(
   // 削除時: social_links_order から該当キーを除去
   const currentOrder = (profile.social_links_order as string[]) ?? [];
   const updatedOrder = currentOrder.filter((k) => k !== platformKey);
+  // 削除時: social_links_comments からも該当キーを除去
+  const currentComments =
+    (profile.social_links_comments as Record<string, string>) ?? {};
+  const updatedComments = { ...currentComments };
+  delete updatedComments[platformKey];
 
   const { error } = await auth.supabase
     .from("profiles")
-    .update({ social_links: updated, social_links_order: updatedOrder })
+    .update({
+      social_links: updated,
+      social_links_order: updatedOrder,
+      social_links_comments: updatedComments,
+    })
     .eq("owner_user_id", auth.userId);
 
   if (error) {

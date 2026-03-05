@@ -11,6 +11,7 @@ interface ProfileData {
   bio: string | null;
   social_links: Record<string, string>;
   social_links_order: string[] | null;
+  social_links_comments: Record<string, string>;
   slug: string | null;
 }
 
@@ -41,7 +42,7 @@ export default async function ProfilePage({ params }: PageProps) {
     ? supabase
         .from("profiles")
         .select(
-          "profile_id, display_name, avatar_url, bio, social_links, social_links_order, slug",
+          "profile_id, display_name, avatar_url, bio, social_links, social_links_order, social_links_comments, slug",
         )
         .eq("profile_id", profile_id)
         .single()
@@ -88,6 +89,7 @@ export default async function ProfilePage({ params }: PageProps) {
           avatarUrl={profile.avatar_url}
           socialLinks={profile.social_links}
           socialLinksOrder={profile.social_links_order ?? undefined}
+          socialLinksComments={profile.social_links_comments}
           showBioPlaceholder={false}
           showSocialEmptyState={false}
         />

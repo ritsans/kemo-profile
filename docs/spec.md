@@ -172,6 +172,16 @@ SNSリンクは `profiles.social_links` JSONB カラムに格納する。プラ�
 - `SOCIAL_PLATFORMS` 未定義キーは保存不可
 - X OAuth で自動設定された `social_links.x` は手動更新/削除不可（表示のみ）
 
+#### SNSリンクコメント
+
+各SNSリンクに任意のひとことコメントを付けられる。
+
+- 保存先: `profiles.social_links_comments` JSONB（形式: `{"x": "毎週土曜日に配信中！"}`）
+- 任意入力・null許容（未入力のキーは保存しない）
+- 最大50文字
+- 編集ドロワー（edit モード）内で編集
+- 公開プロフィールのSNSバナー下に表示
+
 #### 対応プラットフォーム（初期）
 
 | キー | 表示名 | プロフィールURL | 入力の正規化 |
@@ -307,13 +317,14 @@ DBマイグレーションやServer Actionの修正は不要。
 
 ### 11.1 クラウドDB
 
-* `profiles(profile_id, owner_user_id, display_name, avatar_url, social_links, social_links_order, badge, bio, slug, onboarding_completed, created_at, updated_at)`
+* `profiles(profile_id, owner_user_id, display_name, avatar_url, social_links, social_links_order, social_links_comments, badge, bio, slug, onboarding_completed, created_at, updated_at)`
   * `profile_id`: base62の15文字ランダムID（主キー）
   * `owner_user_id`: プロフィール所有者のuser_id（ユニーク制約）
   * `display_name`: ハンドルネーム（必須、最大50文字）
   * `avatar_url`: アバター画像URL（必須）
   * `social_links`: SNSリンク（JSONB、デフォルト `{}`）。形式: `{"x": "username", "pixiv": "12345", ...}`
   * `social_links_order`: SNSリンクの表示順（`text[] | null`）。`social_links` のキー一覧を順序付きで保持する。未設定時は `null`（表示順は未定義）
+  * `social_links_comments`: SNSリンクのひとことコメント（JSONB、デフォルト `{}`）。形式: `{"x": "毎週土曜日に配信中！"}`。未設定キーは格納しない
   * `badge`: バッジリボン（`text[]`、デフォルト `[]`、最大3件のCHECK制約）。定義済み候補から選択した属性タグを格納する（例: `ARTIST`, `VTUBER`, `STREAMER`）
   * `bio`: 自己紹介文（任意、最大160文字）
   * `slug`: カスタムURL識別子（任意、3-20文字、ユニーク制約）

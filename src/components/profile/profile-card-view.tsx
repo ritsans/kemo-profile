@@ -33,6 +33,8 @@ export type ProfileCardViewProps = {
   socialLinks: Record<string, string>;
   /** SNSリンクの表示順序（未指定時は socialLinks のキー順） */
   socialLinksOrder?: string[];
+  /** SNSリンクへのひとことコメント */
+  socialLinksComments?: Record<string, string>;
 
   /** bio が空のときガイド文言を表示するか（デフォルト: false） */
   showBioPlaceholder?: boolean;
@@ -55,6 +57,7 @@ export function ProfileCardView({
   avatarUrl,
   socialLinks,
   socialLinksOrder,
+  socialLinksComments,
   showBioPlaceholder = false,
   bioPlaceholderText = "自己紹介を入力するとここに表示されます",
   showSocialEmptyState = false,
@@ -123,6 +126,7 @@ export function ProfileCardView({
             if (!value) return null;
             const url = platform.profileUrl?.(value) ?? null;
             const Icon = platform.icon;
+            const comment = socialLinksComments?.[platform.key];
             return (
               <div key={platform.key}>
                 {url ? (
@@ -142,6 +146,11 @@ export function ProfileCardView({
                     className={`text-center font-medium text-gray-700 ${s.plainValue}`}
                   >
                     {value}
+                  </p>
+                )}
+                {comment && (
+                  <p className="mt-1 text-center text-xs text-gray-500">
+                    {comment}
                   </p>
                 )}
               </div>

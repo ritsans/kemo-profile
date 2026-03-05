@@ -10,15 +10,16 @@ import {
   reorderSocialLinks,
   updateProfile,
 } from "@/app/actions/profile";
-import { SocialLinkDrawer } from "./social-link-drawer";
 import { ProfileEditFields } from "./profile-edit-fields";
 import { ProfilePreviewCard } from "./profile-preview-card";
+import { SocialLinkDrawer } from "./social-link-drawer";
 
 interface ProfileEditFormProps {
   displayName: string;
   bio: string | null;
   socialLinks: Record<string, string>;
   socialLinksOrder: string[] | null;
+  socialLinksComments: Record<string, string>;
   avatarUrl: string | null;
   lockedSocialKeys: string[];
 }
@@ -57,6 +58,7 @@ export function ProfileEditForm({
   bio,
   socialLinks,
   socialLinksOrder,
+  socialLinksComments,
   avatarUrl,
   lockedSocialKeys,
 }: ProfileEditFormProps) {
@@ -65,6 +67,8 @@ export function ProfileEditForm({
   const [currentBio, setCurrentBio] = useState(bio ?? "");
   const [currentSocialLinks, setCurrentSocialLinks] =
     useState<Record<string, string>>(socialLinks);
+  const [currentSocialLinksComments, setCurrentSocialLinksComments] =
+    useState<Record<string, string>>(socialLinksComments);
 
   // SNSリンクの表示順序
   const [currentOrder, setCurrentOrder] = useState<string[]>(() =>
@@ -91,8 +95,6 @@ export function ProfileEditForm({
   // モーダル状態
   const [modalState, setModalState] = useState<ModalState>(null);
 
-  // 削除処理中のキー
-  const [removingKey, setRemovingKey] = useState<string | null>(null);
   const [, startRemoveTransition] = useTransition();
   const [, startReorderTransition] = useTransition();
 
@@ -167,19 +169,22 @@ export function ProfileEditForm({
   );
 
   // SNSリンク追加・編集の保存後: ローカル状態を更新してモーダルを閉じる
-  function handleSocialLinkSaved(key: string, value: string) {
+  function handleSocialLinkSaved(key: string, value: string, comment: string) {
     setCurrentSocialLinks((prev) => ({ ...prev, [key]: value }));
     setCurrentOrder((prev) => (prev.includes(key) ? prev : [...prev, key]));
+    setCurrentSocialLinksComments((prev) => {
+      if (comment) return { ...prev, [key]: comment };
+      const { [key]: _, ...rest } = prev;
+      return rest;
+    });
     setModalState(null);
   }
 
   // SNSリンク削除
   function handleRemoveSocialLink(key: string) {
     if (!window.confirm("このSNSリンクを削除しますか？")) return;
-    setRemovingKey(key);
     startRemoveTransition(async () => {
       const result = await removeSocialLink(key);
-      setRemovingKey(null);
       if (!result.success) {
         window.alert(result.error);
         return;
@@ -189,6 +194,10 @@ export function ProfileEditForm({
         return rest;
       });
       setCurrentOrder((prev) => prev.filter((k) => k !== key));
+      setCurrentSocialLinksComments((prev) => {
+        const { [key]: _, ...rest } = prev;
+        return rest;
+      });
     });
   }
 
@@ -249,34 +258,40 @@ export function ProfileEditForm({
             previewBio={previewBio}
             previewSocialLinks={currentSocialLinks}
             previewSocialLinksOrder={currentOrder}
+            previewSocialLinksComments={currentSocialLinksComments}
           />
         </section>
       </div>
 
-      {modalState && (
-        <SocialLinkDrawer
-          existingKeys={Object.keys(currentSocialLinks)}
-          mode={modalState.type}
-          initialPlatformKey={
-            modalState.type === "edit" ? modalState.key : undefined
-          }
-          initialValue={
-            modalState.type === "edit"
-              ? (currentSocialLinks[modalState.key] ?? "")
-              : undefined
-          }
-          onClose={() => setModalState(null)}
-          onSaved={handleSocialLinkSaved}
-          onRemove={
-            modalState.type === "edit"
-              ? (key) => {
-                  setModalState(null);
-                  setTimeout(() => handleRemoveSocialLink(key), 200);
-                }
-              : undefined
-          }
-        />
-      )}
+      {modalState &&
+        (() => {
+          const editKey = modalState.type === "edit" ? modalState.key : null;
+          return (
+            <SocialLinkDrawer
+              existingKeys={Object.keys(currentSocialLinks)}
+              mode={modalState.type}
+              initialPlatformKey={editKey ?? undefined}
+              initialValue={
+                editKey ? (currentSocialLinks[editKey] ?? "") : undefined
+              }
+              initialComment={
+                editKey
+                  ? (currentSocialLinksComments[editKey] ?? "")
+                  : undefined
+              }
+              onClose={() => setModalState(null)}
+              onSaved={handleSocialLinkSaved}
+              onRemove={
+                editKey
+                  ? (key) => {
+                      setModalState(null);
+                      setTimeout(() => handleRemoveSocialLink(key), 200);
+                    }
+                  : undefined
+              }
+            />
+          );
+        })()}
     </div>
   );
 }

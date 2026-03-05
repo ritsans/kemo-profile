@@ -35,7 +35,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "profile_id, display_name, avatar_url, bio, social_links, social_links_order, slug, onboarding_completed",
+      "profile_id, display_name, avatar_url, bio, social_links, social_links_order, social_links_comments, slug, onboarding_completed",
     )
     .eq("owner_user_id", user.id)
     .single();
@@ -90,6 +90,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
             bio={profile.bio}
             socialLinks={(profile.social_links ?? {}) as Record<string, string>}
             socialLinksOrder={profile.social_links_order ?? null}
+            socialLinksComments={(profile.social_links_comments ?? {}) as Record<string, string>}
             avatarUrl={profile.avatar_url}
             lockedSocialKeys={lockedSocialKeys}
           />

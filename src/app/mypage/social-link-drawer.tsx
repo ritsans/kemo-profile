@@ -25,9 +25,11 @@ interface SocialLinkDrawerProps {
   initialPlatformKey?: string;
   /** edit モード時の現在値 */
   initialValue?: string;
+  /** edit モード時の現在コメント */
+  initialComment?: string;
   onClose: () => void;
-  /** 保存成功後に呼ばれる（キーと正規化済み値を渡す） */
-  onSaved: (key: string, value: string) => void;
+  /** 保存成功後に呼ばれる（キーと正規化済み値、コメントを渡す） */
+  onSaved: (key: string, value: string, comment: string) => void;
   /** edit モード時: 削除ボタン押下で呼ばれる */
   onRemove?: (key: string) => void;
 }
@@ -37,6 +39,7 @@ export function SocialLinkDrawer({
   mode,
   initialPlatformKey,
   initialValue = "",
+  initialComment = "",
   onClose,
   onSaved,
   onRemove,
@@ -49,6 +52,7 @@ export function SocialLinkDrawer({
     initialPlatformKey ?? "",
   );
   const [inputValue, setInputValue] = useState(initialValue);
+  const [commentValue, setCommentValue] = useState(initialComment);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -80,6 +84,7 @@ export function SocialLinkDrawer({
   function handleSelectPlatform(key: string) {
     setSelectedKey(key);
     setInputValue("");
+    setCommentValue("");
     setError(null);
     setStep("input");
     // ステップ遷移後に input へフォーカス
@@ -89,6 +94,7 @@ export function SocialLinkDrawer({
   function handleBack() {
     setStep("select");
     setInputValue("");
+    setCommentValue("");
     setError(null);
   }
 
@@ -98,7 +104,7 @@ export function SocialLinkDrawer({
 
     startTransition(async () => {
       const action = mode === "add" ? addSocialLink : updateSocialLink;
-      const result = await action(selectedKey, inputValue);
+      const result = await action(selectedKey, inputValue, commentValue);
 
       if (!result.success) {
         setError(result.error);
@@ -107,7 +113,11 @@ export function SocialLinkDrawer({
 
       // 正規化済みの値をコールバックに渡す
       const saved = normalizeInput();
-      onSaved(selectedKey, saved?.value ?? inputValue.trim());
+      onSaved(
+        selectedKey,
+        saved?.value ?? inputValue.trim(),
+        commentValue.trim(),
+      );
       onClose();
     });
   }
@@ -182,29 +192,48 @@ export function SocialLinkDrawer({
               <DrawerTitle>{platform.label}</DrawerTitle>
             </DrawerHeader>
 
-            <div className="mb-4">
-              <Input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={(e) => {
-                  setInputValue(e.target.value);
-                  setError(null);
-                }}
-                placeholder={platform.placeholder}
-                disabled={isPending}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSubmit();
-                }}
-              />
-              {/* URLプレビュー */}
-              {urlPreview && (
-                <p className="mt-1 truncate text-xs text-gray-400">
-                  → {urlPreview}
+            <div className="mb-4 space-y-3">
+              <div>
+                <Input
+                  ref={inputRef}
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder={platform.placeholder}
+                  disabled={isPending}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSubmit();
+                  }}
+                />
+                {/* URLプレビュー */}
+                {urlPreview && (
+                  <p className="mt-1 truncate text-xs text-gray-400">
+                    → {urlPreview}
+                  </p>
+                )}
+                {/* エラー表示 */}
+                {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+              </div>
+              {/* コメント入力（任意） */}
+              <div>
+                <Input
+                  type="text"
+                  value={commentValue}
+                  onChange={(e) => setCommentValue(e.target.value)}
+                  placeholder="ひとことコメント（任意・50文字以内）"
+                  maxLength={50}
+                  disabled={isPending}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSubmit();
+                  }}
+                />
+                <p className="mt-1 text-right text-xs text-muted-foreground">
+                  {commentValue.length} / 50
                 </p>
-              )}
-              {/* エラー表示 */}
-              {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+              </div>
             </div>
 
             <div className="flex items-center justify-between gap-2">
